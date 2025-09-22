@@ -1,0 +1,24 @@
+name: 自动发布
+on:
+    push:
+        branches: [master]
+jobs:
+    deploy_web:
+        name: 发布Web
+        runs-on: ubuntu-latest
+        steps:
+            - name: 克隆项目
+              uses: actions/checkout@v5
+            # - name: 安装Bun
+            #   uses: oven-sh/setup-bun@v2
+            #   with:
+            #     bun-version: latest
+            - name: 构建
+              run: bun run build
+            - name: 发布
+              uses: cloudflare/wrangler-action@v3
+              with:
+                wranglerVersion: latest
+                packageManager: bun
+                accountId: ${{secrets.CLOUDFLARE_ACCOUNT_ID}}
+                apiToken: ${{secrets.CLOUDFLARE_API_TOKEN}}
