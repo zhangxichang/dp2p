@@ -3,14 +3,31 @@ import { isTauri } from "@tauri-apps/api/core";
 import { getCurrentWindow } from "@tauri-apps/api/window";
 import { useEffect, useState } from "react";
 
-export const Route = createFileRoute("/viewport")({
+export const Route = createFileRoute("/window")({
     component: Component,
 });
 function Component() {
     const [is_maximized, set_is_maximized] = useState(false);
     useEffect(() => {
         if (isTauri()) {
-            getCurrentWindow().onResized(async () => set_is_maximized(await getCurrentWindow().isMaximized()));
+            const old_title = getCurrentWindow().title();
+            getCurrentWindow().setTitle(document.title).catch(console.error);
+            const mutation_observer = new MutationObserver((mutations) => {
+                for (const mutation of mutations) {
+                    if (mutation.type === "childList") {
+                        getCurrentWindow().setTitle(document.title).catch(console.error);
+                    }
+                }
+            });
+            mutation_observer.observe(document.querySelector("title")!, { childList: true });
+            const un_on_resized = getCurrentWindow().onResized(async () => set_is_maximized(await getCurrentWindow().isMaximized()));
+            return () => {
+                mutation_observer.disconnect();
+                (async () => {
+                    (await un_on_resized)();
+                    await getCurrentWindow().setTitle(await old_title);
+                })();
+            };
         }
     }, []);
     return <>
@@ -35,7 +52,7 @@ function Component() {
                 </>}
             </div>
             <Outlet />
-            <Navigate to="/viewport/login" />
+            <Navigate to="/window/login" />
         </div>
     </>;
 }

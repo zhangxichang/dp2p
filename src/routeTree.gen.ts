@@ -9,13 +9,13 @@
 // Additionally, you should also exclude this file from your linter and/or formatter to prevent it from being checked or modified.
 
 import { Route as rootRouteImport } from './routes/__root'
-import { Route as ViewportRouteImport } from './routes/viewport'
+import { Route as WindowRouteImport } from './routes/window'
 import { Route as IndexRouteImport } from './routes/index'
-import { Route as ViewportLoginRouteImport } from './routes/viewport/login'
+import { Route as WindowLoginRouteImport } from './routes/window/login'
 
-const ViewportRoute = ViewportRouteImport.update({
-  id: '/viewport',
-  path: '/viewport',
+const WindowRoute = WindowRouteImport.update({
+  id: '/window',
+  path: '/window',
   getParentRoute: () => rootRouteImport,
 } as any)
 const IndexRoute = IndexRouteImport.update({
@@ -23,48 +23,48 @@ const IndexRoute = IndexRouteImport.update({
   path: '/',
   getParentRoute: () => rootRouteImport,
 } as any)
-const ViewportLoginRoute = ViewportLoginRouteImport.update({
+const WindowLoginRoute = WindowLoginRouteImport.update({
   id: '/login',
   path: '/login',
-  getParentRoute: () => ViewportRoute,
+  getParentRoute: () => WindowRoute,
 } as any)
 
 export interface FileRoutesByFullPath {
   '/': typeof IndexRoute
-  '/viewport': typeof ViewportRouteWithChildren
-  '/viewport/login': typeof ViewportLoginRoute
+  '/window': typeof WindowRouteWithChildren
+  '/window/login': typeof WindowLoginRoute
 }
 export interface FileRoutesByTo {
   '/': typeof IndexRoute
-  '/viewport': typeof ViewportRouteWithChildren
-  '/viewport/login': typeof ViewportLoginRoute
+  '/window': typeof WindowRouteWithChildren
+  '/window/login': typeof WindowLoginRoute
 }
 export interface FileRoutesById {
   __root__: typeof rootRouteImport
   '/': typeof IndexRoute
-  '/viewport': typeof ViewportRouteWithChildren
-  '/viewport/login': typeof ViewportLoginRoute
+  '/window': typeof WindowRouteWithChildren
+  '/window/login': typeof WindowLoginRoute
 }
 export interface FileRouteTypes {
   fileRoutesByFullPath: FileRoutesByFullPath
-  fullPaths: '/' | '/viewport' | '/viewport/login'
+  fullPaths: '/' | '/window' | '/window/login'
   fileRoutesByTo: FileRoutesByTo
-  to: '/' | '/viewport' | '/viewport/login'
-  id: '__root__' | '/' | '/viewport' | '/viewport/login'
+  to: '/' | '/window' | '/window/login'
+  id: '__root__' | '/' | '/window' | '/window/login'
   fileRoutesById: FileRoutesById
 }
 export interface RootRouteChildren {
   IndexRoute: typeof IndexRoute
-  ViewportRoute: typeof ViewportRouteWithChildren
+  WindowRoute: typeof WindowRouteWithChildren
 }
 
 declare module '@tanstack/react-router' {
   interface FileRoutesByPath {
-    '/viewport': {
-      id: '/viewport'
-      path: '/viewport'
-      fullPath: '/viewport'
-      preLoaderRoute: typeof ViewportRouteImport
+    '/window': {
+      id: '/window'
+      path: '/window'
+      fullPath: '/window'
+      preLoaderRoute: typeof WindowRouteImport
       parentRoute: typeof rootRouteImport
     }
     '/': {
@@ -74,31 +74,30 @@ declare module '@tanstack/react-router' {
       preLoaderRoute: typeof IndexRouteImport
       parentRoute: typeof rootRouteImport
     }
-    '/viewport/login': {
-      id: '/viewport/login'
+    '/window/login': {
+      id: '/window/login'
       path: '/login'
-      fullPath: '/viewport/login'
-      preLoaderRoute: typeof ViewportLoginRouteImport
-      parentRoute: typeof ViewportRoute
+      fullPath: '/window/login'
+      preLoaderRoute: typeof WindowLoginRouteImport
+      parentRoute: typeof WindowRoute
     }
   }
 }
 
-interface ViewportRouteChildren {
-  ViewportLoginRoute: typeof ViewportLoginRoute
+interface WindowRouteChildren {
+  WindowLoginRoute: typeof WindowLoginRoute
 }
 
-const ViewportRouteChildren: ViewportRouteChildren = {
-  ViewportLoginRoute: ViewportLoginRoute,
+const WindowRouteChildren: WindowRouteChildren = {
+  WindowLoginRoute: WindowLoginRoute,
 }
 
-const ViewportRouteWithChildren = ViewportRoute._addFileChildren(
-  ViewportRouteChildren,
-)
+const WindowRouteWithChildren =
+  WindowRoute._addFileChildren(WindowRouteChildren)
 
 const rootRouteChildren: RootRouteChildren = {
   IndexRoute: IndexRoute,
-  ViewportRoute: ViewportRouteWithChildren,
+  WindowRoute: WindowRouteWithChildren,
 }
 export const routeTree = rootRouteImport
   ._addFileChildren(rootRouteChildren)

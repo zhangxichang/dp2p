@@ -5,23 +5,30 @@ import { Label } from "@/components/ui/label";
 import { Select, SelectContent, SelectGroup, SelectItem, SelectLabel, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { Database } from "@/database";
 import { createFileRoute } from "@tanstack/react-router";
-import { useState } from "react";
+import { useEffect, useState } from "react";
 
-interface Account {
+export interface Account {
     id: string;
     name: string;
 }
 
-export const Route = createFileRoute("/viewport/login")({
+export const Route = createFileRoute("/window/login")({
     component: Component,
     pendingComponent: Loading,
     loader: async () => {
-        window.database = await Database.init();
+        if (!window.database) {
+            window.database = await Database.init();
+        }
     }
 });
 function Component() {
     const [is_login, set_is_login] = useState(true);
     const [accounts, set_accounts] = useState<Array<Account>>([]);
+    const [selected_account, set_selected_account] = useState<string>();
+    const [input_account_name, set_input_account_name] = useState("");
+    useEffect(() => {
+        (async () => set_accounts(await window.database!.get_accounts()))();
+    }, []);
     return <>
         <div className="flex-1 flex items-center justify-center">
             <Card className="w-72">
@@ -33,7 +40,7 @@ function Component() {
                     </CardAction>
                 </CardHeader>
                 <CardContent>
-                    {is_login ? <Select>
+                    {is_login ? <Select value={selected_account} onValueChange={(e) => set_selected_account(e)}>
                         <SelectTrigger className="w-full">
                             <SelectValue placeholder="选择账户" />
                         </SelectTrigger>
@@ -45,11 +52,18 @@ function Component() {
                         </SelectContent>
                     </Select> : <div className="flex flex-col gap-2">
                         <Label>用户名</Label>
-                        <Input placeholder="输入用户名" />
+                        <Input value={input_account_name} onChange={(e) => set_input_account_name(e.target.value)} placeholder="输入用户名" />
                     </div>}
                 </CardContent>
                 <CardFooter>
-                    <Button className="w-full" onClick={() => { }}>{is_login ? "登录" : "注册"}</Button>
+                    <Button disabled={is_login ? !selected_account : !input_account_name} className="w-full" onClick={async () => {
+                        if (is_login) {
+                            console.info(selected_account);
+                        } else {
+                            console.info(input_account_name);
+                            set_input_account_name("");
+                        }
+                    }}>{is_login ? "登录" : "注册"}</Button>
                 </CardFooter>
             </Card>
         </div>

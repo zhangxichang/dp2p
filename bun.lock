@@ -3,23 +3,25 @@
   "workspaces": {
     "": {
       "dependencies": {
-        "@radix-ui/react-label": "^2.1.7",
-        "@radix-ui/react-select": "^2.2.6",
-        "@radix-ui/react-slot": "^1.2.3",
+        "@radix-ui/react-label": "2.1.7",
+        "@radix-ui/react-select": "2.2.6",
+        "@radix-ui/react-slot": "1.2.3",
         "@tanstack/react-router": "1.131.50",
         "@tanstack/react-router-devtools": "1.131.50",
         "@tauri-apps/api": "2.8.0",
         "@tauri-apps/plugin-os": "2.3.1",
-        "class-variance-authority": "^0.7.1",
-        "clsx": "^2.1.1",
-        "lucide-react": "^0.544.0",
+        "class-variance-authority": "0.7.1",
+        "clsx": "2.1.1",
+        "dexie": "^4.2.0",
+        "dexie-react-hooks": "^4.2.0",
+        "lucide-react": "0.544.0",
         "react": "19.1.1",
         "react-dom": "19.1.1",
-        "tailwind-merge": "^3.3.1",
+        "tailwind-merge": "3.3.1",
       },
       "devDependencies": {
         "@eslint/js": "9.36.0",
-        "@iconify/json": "2.2.386",
+        "@iconify/json": "2.2.387",
         "@iconify/tailwind4": "1.0.6",
         "@tailwindcss/vite": "4.1.13",
         "@tanstack/router-plugin": "1.131.50",
@@ -33,7 +35,7 @@
         "eslint-plugin-react-refresh": "0.4.21",
         "globals": "16.4.0",
         "tailwindcss": "4.1.13",
-        "tw-animate-css": "^1.3.8",
+        "tw-animate-css": "1.3.8",
         "typescript": "5.9.2",
         "typescript-eslint": "8.44.1",
         "vite": "7.1.7",
@@ -191,7 +193,7 @@
 
     "@humanwhocodes/retry": ["@humanwhocodes/retry@0.4.3", "", {}, "sha512-bV0Tgo9K4hfPCek+aMAn81RppFKv2ySDQeMoSZuvTASywNTnVJCArCZE2FWqpvIatKu7VMRLWlR1EazvVhDyhQ=="],
 
-    "@iconify/json": ["@iconify/json@2.2.386", "", { "dependencies": { "@iconify/types": "*", "pathe": "^1.1.2" } }, "sha512-qvSvaRBu4B1PXKLoXc2yme+eRy3NDTQh/CO3k1vmXjwDKFTFUEVmn8nTD4elPMJZEQa3OOVjh4NfYopnxiAabA=="],
+    "@iconify/json": ["@iconify/json@2.2.387", "", { "dependencies": { "@iconify/types": "*", "pathe": "^1.1.2" } }, "sha512-R1PTcM799jGSqHNfzggGqEQA+bQry/X/ckoISJIMKZdC9cz4pYWrWZsRGU50DmYkqTcC9aBQcSLOZxBFHTVT3Q=="],
 
     "@iconify/tailwind4": ["@iconify/tailwind4@1.0.6", "", { "dependencies": { "@iconify/types": "^2.0.0", "@iconify/utils": "^2.2.1" }, "peerDependencies": { "tailwindcss": ">= 4" } }, "sha512-43ZXe+bC7CuE2LCgROdqbQeFYJi/J7L/k1UpSy8KDQlWVsWxPzLSWbWhlJx4uRYLOh1NRyw02YlDOgzBOFNd+A=="],
 
@@ -506,6 +508,10 @@
     "detect-libc": ["detect-libc@2.1.0", "", {}, "sha512-vEtk+OcP7VBRtQZ1EJ3bdgzSfBjgnEalLTp5zjJrS+2Z1w2KZly4SBdac/WDU3hhsNAZ9E8SC96ME4Ey8MZ7cg=="],
 
     "detect-node-es": ["detect-node-es@1.1.0", "", {}, "sha512-ypdmJU/TbBby2Dxibuv7ZLW3Bs1QEmM7nHjEANfohJLvE0XVujisn1qPJcZxg+qDucsr+bP6fLD1rPS3AhJ7EQ=="],
+
+    "dexie": ["dexie@4.2.0", "", {}, "sha512-OSeyyWOUetDy9oFWeddJgi83OnRA3hSFh3RrbltmPgqHszE9f24eUCVLI4mPg0ifsWk0lQTdnS+jyGNrPMvhDA=="],
+
+    "dexie-react-hooks": ["dexie-react-hooks@4.2.0", "", { "peerDependencies": { "@types/react": ">=16", "dexie": ">=4.2.0-alpha.1 <5.0.0", "react": ">=16" } }, "sha512-u7KqTX9JpBQK8+tEyA9X0yMGXlSCsbm5AU64N6gjvGk/IutYDpLBInMYEAEC83s3qhIvryFS+W+sqLZUBEvePQ=="],
 
     "diff": ["diff@8.0.2", "", {}, "sha512-sSuxWU5j5SR9QQji/o2qMvqRNYRDOcBTgsJ/DeCf4iSN4gW+gNMXM7wFIP+fdXZxoNiAnHUTGjCr+TSWXdRDKg=="],
 
