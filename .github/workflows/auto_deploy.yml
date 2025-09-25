@@ -12,6 +12,8 @@ jobs:
             - uses: oven-sh/setup-bun@v2
               with:
                 bun-version: latest
+            - uses: arduino/setup-protoc@v3
+            
             - name: 安装wasm32-unknown-unknown
               run: rustup target install wasm32-unknown-unknown
             - name: 安装wasm-pack
