@@ -14,12 +14,12 @@ export default defineConfig({
         }
     },
     plugins: [
+        tanstackRouter({ target: "react", autoCodeSplitting: true }),
+        react(),
+        tailwindcss(),
+        wasm(),
         visualizer({
             template: "network"
         }),
-        wasm(),
-        tailwindcss(),
-        tanstackRouter({ target: "react", autoCodeSplitting: true }),
-        react()
     ]
 });

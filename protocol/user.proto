@@ -13,4 +13,5 @@ message AcceptMessage { AcceptMessageFlags flags = 1; }
 message User {
   string id = 1;
   string name = 2;
+  optional bytes avatar = 3;
 }

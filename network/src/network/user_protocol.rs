@@ -17,14 +17,16 @@ pub struct Account {
     pub id: String,
     pub name: String,
     pub key: SecretKey,
+    pub avatar: Option<Vec<u8>>,
 }
 impl Account {
-    pub fn new(name: impl AsRef<str>) -> Self {
+    pub fn new(name: impl AsRef<str>, avatar: Option<impl AsRef<[u8]>>) -> Self {
         let key = SecretKey::generate(rand_0_8_5::rngs::OsRng);
         Self {
             id: key.public().to_string(),
             name: name.as_ref().to_string(),
             key,
+            avatar: avatar.map(|v| v.as_ref().to_vec()),
         }
     }
 }
@@ -33,6 +35,7 @@ impl From<Account> for User {
         Self {
             id: value.id,
             name: value.name,
+            avatar: value.avatar,
         }
     }
 }
@@ -55,8 +58,11 @@ impl UserProtocol {
                 let account = self.account.clone();
                 async move {
                     async move {
-                        let a = recv.read_to_end(usize::MAX).await?;
-                        match Packet::decode(a.as_ref())?.message.unwrap().flags() {
+                        match Packet::decode(recv.read_to_end(usize::MAX).await?.as_ref())?
+                            .message
+                            .unwrap()
+                            .flags()
+                        {
                             AcceptMessageFlags::RequestUserInfo => {
                                 send.write_all(&User::from((*account).clone()).encode_to_vec())
                                     .await?;

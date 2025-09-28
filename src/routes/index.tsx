@@ -1,5 +1,13 @@
-import { createFileRoute, Navigate } from "@tanstack/react-router";
+import { Toaster } from "@/components/ui/sonner";
+import { createFileRoute, Navigate, Outlet } from "@tanstack/react-router";
 
 export const Route = createFileRoute("/")({
-    component: () => <Navigate to="/window" />,
+    component: Component,
 });
+function Component() {
+    return <>
+        <Outlet />
+        <Navigate to="/window" />
+        <Toaster />
+    </>;
+}

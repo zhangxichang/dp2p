@@ -10,7 +10,7 @@ crate-type = ["rlib", "cdylib"]
 protocol = { path = "../protocol" }
 
 eyre = "0.6.12"
-serde = { version = "1.0.227", features = ["derive"] }
+serde = { version = "1.0.228", features = ["derive"] }
 
 rand_0_8_5 = { package = "rand", version = "0.8.5" } #dependi: disable-check
 iroh = "0.92.0"

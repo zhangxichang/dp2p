@@ -32,6 +32,9 @@ impl Network {
             gossip,
         })
     }
+    pub async fn shutdown(&self) -> Result<()> {
+        Ok(self.router.shutdown().await?)
+    }
     pub fn account(&self) -> Arc<Account> {
         self.user_protocol.account.clone()
     }

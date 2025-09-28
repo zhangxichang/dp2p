@@ -11,8 +11,8 @@ use crate::{
 pub struct User(protocol::User);
 #[wasm_bindgen]
 impl User {
-    pub fn new(id: String, name: String) -> Self {
-        Self(protocol::User { id, name })
+    pub fn new(id: String, name: String, avatar: Option<Vec<u8>>) -> Self {
+        Self(protocol::User { id, name, avatar })
     }
     #[wasm_bindgen(getter)]
     pub fn id(&self) -> String {
@@ -21,6 +21,10 @@ impl User {
     #[wasm_bindgen(getter)]
     pub fn name(&self) -> String {
         self.0.name.clone()
+    }
+    #[wasm_bindgen(getter)]
+    pub fn avatar(&self) -> Option<Vec<u8>> {
+        self.0.avatar.clone()
     }
 }
 impl From<User> for protocol::User {
@@ -40,6 +44,9 @@ pub struct Network(network::Network);
 impl Network {
     pub async fn new(account: Account) -> Result<Self, JsError> {
         Ok(Self(network::Network::new(account.into()).await.mje()?))
+    }
+    pub async fn shutdown(&self) -> Result<(), JsError> {
+        Ok(self.0.shutdown().await.mje()?)
     }
     pub fn account(&self) -> Account {
         (*self.0.account()).clone().into()
