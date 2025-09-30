@@ -2,20 +2,26 @@ import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar"
 import { Button } from "@/components/ui/button"
 import { DropdownMenu, DropdownMenuContent, DropdownMenuItem, DropdownMenuTrigger } from "@/components/ui/dropdown-menu"
 import { Input } from "@/components/ui/input"
-import { createFileRoute, useNavigate } from "@tanstack/react-router"
+import { Network } from "@/lib/network"
+import { createFileRoute, Outlet, useNavigate } from "@tanstack/react-router"
+import { Account } from "@zhangxichang/network"
 import { Clipboard, LogOut } from "lucide-react"
 import { useEffect } from "react"
 
-export const Route = createFileRoute("/window/chat")({
+export const Route = createFileRoute("/window/app/chat/$account_id")({
     component: Component,
     pendingComponent: PendingComponent,
+    beforeLoad: async ({ context, params }) => ({
+        network: await Network.new(Account.from_json(await context.database.get("accounts", params.account_id)))
+    })
 })
 
 function Component() {
+    const context = Route.useRouteContext()
     const navigate = useNavigate()
     //获取当前用户
     const account = (() => {
-        const account = network!.account()
+        const account = context.network.account()
         return {
             id: account.id,
             name: account.name,
@@ -36,7 +42,8 @@ function Component() {
                 <Input placeholder="搜索用户" />
             </div>
             <div className="flex-1 flex flex-col border-b">
-                <div className="h-12 flex items-center px-2">
+                <div className="h-12 flex items-center px-2 gap-2 hover:bg-neutral-100" onClick={() => {
+                }}>
                     <Avatar>
                         <AvatarImage src={account.avatar_url} />
                         <AvatarFallback>{account.name[0]}</AvatarFallback>
@@ -61,9 +68,8 @@ function Component() {
                             <span>复制用户ID</span>
                         </DropdownMenuItem>
                         <DropdownMenuItem onClick={async () => {
-                            await window.network!.shutdown()
-                            window.network = null
-                            await navigate({ to: "/window/login" })
+                            await context.network.shutdown()
+                            await navigate({ to: "/window/app/login" })
                         }}>
                             <LogOut />
                             <span>登出</span>
@@ -72,8 +78,7 @@ function Component() {
                 </DropdownMenu>
             </div>
         </div>
-        <div className="flex-1 flex">
-        </div>
+        <Outlet />
     </div>
 }
 

@@ -52,7 +52,7 @@ function Component() {
             </>}
         </div>
         <Outlet />
-        <Navigate to="/window/login" />
+        <Navigate to="/window/app" />
     </div>
 }
 
