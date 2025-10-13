@@ -57,6 +57,7 @@
         "sonner": "2.0.7",
         "tailwind-merge": "3.3.1",
         "vaul": "1.1.2",
+        "wasm-and-native": "file:wasm-and-native/pkg",
         "zod": "4.1.12",
         "zustand": "5.0.8",
       },
@@ -74,10 +75,6 @@
         "vite": "npm:rolldown-vite@7.1.16",
         "vite-plugin-wasm": "3.5.0",
       },
-    },
-    "wasm-and-native/pkg": {
-      "name": "wasm-and-native",
-      "version": "0.1.0",
     },
   },
   "packages": {
@@ -897,7 +894,7 @@
 
     "vite-plugin-wasm": ["vite-plugin-wasm@3.5.0", "", { "peerDependencies": { "vite": "^2 || ^3 || ^4 || ^5 || ^6 || ^7" } }, "sha512-X5VWgCnqiQEGb+omhlBVsvTfxikKtoOgAzQ95+BZ8gQ+VfMHIjSHr0wyvXFQCa0eKQ0fKyaL0kWcEnYqBac4lQ=="],
 
-    "wasm-and-native": ["wasm-and-native@workspace:wasm-and-native/pkg"],
+    "wasm-and-native": ["wasm-and-native@file:wasm-and-native/pkg", {}],
 
     "webpack-virtual-modules": ["webpack-virtual-modules@0.6.2", "", {}, "sha512-66/V2i5hQanC51vBQKPH4aI8NMAcBW59FVBs+rC7eGHupMyfn34q7rZIE+ETlJ+XTevqfUhVVBgSUNSW2flEUQ=="],
 

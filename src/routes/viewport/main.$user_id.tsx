@@ -14,7 +14,7 @@ import { Loading } from "@/components/loading"
 import { Tooltip, TooltipContent } from "@/components/ui/tooltip"
 import { TooltipTrigger } from "@radix-ui/react-tooltip"
 import { Item, ItemActions, ItemContent, ItemDescription, ItemMedia, ItemTitle } from "@/components/ui/item"
-import { Node, SecretKey, UserInfo as NodeUserInfo } from "wasm-and-native";
+import { Node, SecretKey, UserInfo as NodeUserInfo } from "wasm-and-native"
 import { blob_to_data_url, type UserInfo } from "@/lib/type"
 import { Dialog, DialogContent, DialogDescription, DialogHeader, DialogTitle, DialogTrigger } from "@/components/ui/dialog"
 import { Form, FormControl, FormField, FormItem, FormLabel, FormMessage } from "@/components/ui/form"

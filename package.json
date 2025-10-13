@@ -8,9 +8,6 @@
         "build:wasm:dev": "wasm-pack build ./wasm-and-native --dev",
         "build:wasm:release": "wasm-pack build ./wasm-and-native --release"
     },
-    "workspaces": [
-        "./wasm-and-native/pkg"
-    ],
     "devDependencies": {
         "@tailwindcss/vite": "4.1.14",
         "@tanstack/router-plugin": "1.132.51",
@@ -26,6 +23,7 @@
         "vite-plugin-wasm": "3.5.0"
     },
     "dependencies": {
+        "wasm-and-native": "file:wasm-and-native/pkg",
         "@hookform/resolvers": "5.2.2",
         "@radix-ui/react-accordion": "1.2.12",
         "@radix-ui/react-alert-dialog": "1.1.15",
