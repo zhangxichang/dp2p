@@ -1,6 +1,6 @@
 import { render } from "./render"
 
-async function main() {
+function main() {
     render()
 }
-await main()
+main()

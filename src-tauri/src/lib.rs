@@ -29,6 +29,7 @@ pub fn run() {
     tauri
         .plugin(tauri_plugin_prevent_default.build())
         .plugin(tauri_plugin_os::init())
+        .plugin(tauri_plugin_opener::init())
         .invoke_handler(tauri::generate_handler![])
         .run(tauri::generate_context!())
         .unwrap();

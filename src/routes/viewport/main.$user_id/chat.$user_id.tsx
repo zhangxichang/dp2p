@@ -10,9 +10,12 @@ import Textarea from "react-textarea-autosize"
 import { toast } from "sonner"
 import z from "zod"
 
-export const Route = createFileRoute("/viewport/chat/$account_id/chatbar/$user_id")({
+export const Route = createFileRoute("/viewport/main/$user_id/chat/$user_id")({
     component: Component,
     pendingComponent: () => <Loading hint_text="正在加载聊天栏" />,
+    beforeLoad: async ({ }) => {
+        return {}
+    }
 })
 function Component() {
     //发送消息表单规则
@@ -52,11 +55,12 @@ function Component() {
                     <FormField
                         control={send_message_form.control}
                         name="message"
-                        render={({ field }) => <>
+                        render={({ field, formState }) => (
                             <FormItem>
                                 <FormControl>
                                     <Textarea
                                         {...field}
+                                        disabled={formState.isSubmitting}
                                         maxRows={16}
                                         className="resize-none border rounded p-2 focus:outline-none focus:border-neutral-200 focus:ring-1 focus:ring-neutral-200"
                                         placeholder="发送消息"
@@ -64,15 +68,17 @@ function Component() {
                                             if (e.key === "Enter" && !e.shiftKey) {
                                                 e.preventDefault()
                                                 await send_message_form.handleSubmit((form) => {
-                                                    toast.info(form.message)
-                                                    send_message_form.reset()
+                                                    try {
+                                                        toast.info(form.message)
+                                                        send_message_form.reset()
+                                                    } catch (error) { send_message_form.setError("message", { message: `${error}` }) }
                                                 })()
                                             }
                                         }}
                                     />
                                 </FormControl>
                             </FormItem>
-                        </>}
+                        )}
                     />
                 </Form>
             </div>

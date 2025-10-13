@@ -14,9 +14,9 @@ import { Form, FormControl, FormField, FormItem, FormLabel, FormMessage } from "
 import { useForm } from "react-hook-form"
 import { zodResolver } from "@hookform/resolvers/zod"
 import { z } from "zod"
-import { Account } from "@zhangxichang/network"
 import { Loading } from "@/components/loading"
-import { DOMUser } from "@/lib/type"
+import { SecretKey } from "wasm-and-native"
+import { blob_to_data_url, type UserInfo } from "@/lib/type"
 
 export const Route = createFileRoute("/viewport/login")({
     component: Component,
@@ -25,10 +25,10 @@ export const Route = createFileRoute("/viewport/login")({
 function Component() {
     const context = Route.useRouteContext()
     const navigate = useNavigate()
-    const register_account_avatar_input_ref = useRef<HTMLInputElement>(null)
+    const register_avatar_input_ref = useRef<HTMLInputElement>(null)
     //登录表单规则
     const login_form_schema = useMemo(() => z.object({
-        account_id: z.string().min(1, "请选择一个账户"),
+        user_id: z.string().min(1, "请选择一个账户"),
         avatar_url: z.string().optional()
     }), [])
     //注册表单规则
@@ -40,7 +40,7 @@ function Component() {
     const login_form = useForm<z.infer<typeof login_form_schema>>({
         resolver: zodResolver(login_form_schema),
         defaultValues: {
-            account_id: ""
+            user_id: ""
         }
     })
     //注册表单
@@ -50,15 +50,21 @@ function Component() {
             user_name: ""
         }
     })
-    const login_accounts = useLiveQuery(async () => {
-        const login_accounts: DOMUser[] = []
+    //实时获取用户
+    const users = useLiveQuery(async () => {
+        const users: (Omit<UserInfo, "avatar"> & { id: string, avatar_url?: string })[] = []
         let is_login_form_reset = true
-        for (const value of await context.dexie.accounts.toArray()) {
-            login_accounts.push(await DOMUser.from(value))
-            if (value.id === login_form.getValues("account_id") && is_login_form_reset) is_login_form_reset = false
+        for (const value of await context.dexie.users.toArray()) {
+            users.push({
+                id: value.id,
+                name: value.name,
+                avatar_url: value.avatar && await blob_to_data_url(new Blob([Uint8Array.from(value.avatar)])),
+                bio: value.bio
+            })
+            if (value.id === login_form.getValues("user_id") && is_login_form_reset) is_login_form_reset = false
         }
         if (is_login_form_reset) login_form.reset()
-        return login_accounts
+        return users
     })
     return (
         <div className="flex-1 flex items-center justify-center">
@@ -99,31 +105,35 @@ function Component() {
                                     />
                                     <FormField
                                         control={login_form.control}
-                                        name="account_id"
+                                        name="user_id"
                                         render={({ field }) => (
                                             <FormItem>
                                                 <FormLabel>账户</FormLabel>
                                                 <Select
                                                     value={field.value}
-                                                    onValueChange={(v) => {
-                                                        field.onChange(v)
-                                                        login_form.setValue("avatar_url", login_accounts?.find((a) => a.id === v)?.avatar_base64_url);
+                                                    onValueChange={(value) => {
+                                                        field.onChange(value)
+                                                        login_form.setValue("avatar_url", users?.find((a) => a.id === value)?.avatar_url);
                                                     }}
                                                 >
                                                     <FormControl>
-                                                        <SelectTrigger className="w-full">
+                                                        <SelectTrigger className="w-full py-5">
                                                             <SelectValue placeholder="选择账户" />
                                                         </SelectTrigger>
                                                     </FormControl>
                                                     <SelectContent>
                                                         <SelectGroup>
                                                             <SelectLabel>账户</SelectLabel>
-                                                            {login_accounts?.map((value) => (
+                                                            {users?.map((value) => (
                                                                 <SelectItem
                                                                     key={value.id}
                                                                     value={value.id}
                                                                 >
-                                                                    {value.name}
+                                                                    <Avatar>
+                                                                        <AvatarImage src={value.avatar_url} />
+                                                                        <AvatarFallback>{value.name[0]}</AvatarFallback>
+                                                                    </Avatar>
+                                                                    <span>{value.name}</span>
                                                                 </SelectItem>
                                                             ))}
                                                         </SelectGroup>
@@ -143,11 +153,11 @@ function Component() {
                                     <FormField
                                         control={register_form.control}
                                         name="avatar_url"
-                                        render={({ field }) => (<FormItem className="flex justify-center">
+                                        render={({ field }) => (<FormItem className="flex flex-col items-center">
                                             <FormControl>
                                                 <Avatar
                                                     className="size-14 cursor-pointer"
-                                                    onClick={() => register_account_avatar_input_ref.current?.click()}
+                                                    onClick={() => register_avatar_input_ref.current?.click()}
                                                 >
                                                     <AvatarImage src={field.value} />
                                                     <AvatarFallback><User /></AvatarFallback>
@@ -155,7 +165,7 @@ function Component() {
                                             </FormControl>
                                             <FormMessage />
                                             <input
-                                                ref={register_account_avatar_input_ref}
+                                                ref={register_avatar_input_ref}
                                                 type="file"
                                                 accept="image/*"
                                                 style={{ display: "none" }}
@@ -164,14 +174,10 @@ function Component() {
                                                     if (file) {
                                                         if (!file.type.startsWith("image/")) {
                                                             register_form.setError("avatar_url", { message: "请选择一个图片文件" })
-                                                            return
+                                                        } else {
+                                                            register_form.clearErrors("avatar_url")
+                                                            field.onChange(await blob_to_data_url(file))
                                                         }
-                                                        field.onChange(await new Promise<string>((resolve, reject) => {
-                                                            const file_reader = new FileReader();
-                                                            file_reader.onload = (e) => resolve(e.target?.result as string)
-                                                            file_reader.onerror = (e) => reject(e.target?.error)
-                                                            file_reader.readAsDataURL(file)
-                                                        }))
                                                     }
                                                 }}
                                             />
@@ -197,25 +203,24 @@ function Component() {
                     <CardFooter>
                         <TabsContent value="login" className="flex flex-col gap-1">
                             <Button
-                                className="w-full"
                                 disabled={login_form.formState.isSubmitting}
                                 onClick={login_form.handleSubmit(async (form) => await navigate({
-                                    to: "/viewport/chat/$account_id",
-                                    params: { account_id: form.account_id }
+                                    to: "/viewport/main/$user_id",
+                                    params: { user_id: form.user_id }
                                 }))}
                             >{login_form.formState.isSubmitting ? "登录中..." : "登录"}</Button>
                             <AlertDialog>
                                 <AlertDialogTrigger asChild>
-                                    <Button variant={"outline"} className="w-full" onClick={(e) => {
-                                        if (login_form.getValues("account_id") === login_form.formState.defaultValues?.account_id) {
-                                            login_form.setError("account_id", { message: "请先选择一个账户删除" })
+                                    <Button variant={"outline"} onClick={(e) => {
+                                        if (login_form.getValues("user_id") === login_form.formState.defaultValues?.user_id) {
+                                            login_form.setError("user_id", { message: "请先选择一个账户删除" })
                                             e.preventDefault()
                                         }
                                     }}>删除账户</Button>
                                 </AlertDialogTrigger>
                                 <AlertDialogContent>
                                     <AlertDialogHeader>
-                                        <AlertDialogTitle>确定要删除选择的账户吗?</AlertDialogTitle>
+                                        <AlertDialogTitle>确定要删除选择的账户吗？</AlertDialogTitle>
                                         <AlertDialogDescription>
                                             此操作将会删除此账户的所有数据，且无法恢复，请谨慎操作！
                                         </AlertDialogDescription>
@@ -223,7 +228,7 @@ function Component() {
                                     <AlertDialogFooter>
                                         <AlertDialogCancel>取消</AlertDialogCancel>
                                         <AlertDialogAction onClick={async () => {
-                                            await context.dexie.accounts.delete(login_form.getValues("account_id"))
+                                            await context.dexie.users.delete(login_form.getValues("user_id"))
                                             login_form.reset()
                                         }}
                                         >确定</AlertDialogAction>
@@ -233,20 +238,20 @@ function Component() {
                         </TabsContent>
                         <TabsContent value="register" asChild>
                             <Button
-                                className="w-full"
                                 disabled={register_form.formState.isSubmitting}
                                 onClick={register_form.handleSubmit(async (form) => {
                                     try {
-                                        if ((await context.dexie.accounts.where("name").equals(form.user_name).count()) === 0) {
-                                            await context.dexie.accounts.add(Account.new(
-                                                form.user_name,
-                                                form.avatar_url ? await (await fetch(form.avatar_url)).bytes() : null
-                                            ).json())
+                                        if ((await context.dexie.users.where("name").equals(form.user_name).count()) === 0) {
+                                            const secret_key = SecretKey.new()
+                                            await context.dexie.users.add({
+                                                id: secret_key.to_string(),
+                                                key: secret_key.to_bytes(),
+                                                name: form.user_name,
+                                                avatar: form.avatar_url ? await (await fetch(form.avatar_url)).bytes() : undefined
+                                            })
                                             register_form.reset()
                                             toast.success("账户注册成功")
-                                        } else {
-                                            register_form.setError("user_name", { message: "用户名已经存在了" })
-                                        }
+                                        } else { register_form.setError("user_name", { message: "用户名已经存在了" }) }
                                     } catch (error) { register_form.setError("user_name", { message: `${error}` }) }
                                 })}
                             >注册</Button>

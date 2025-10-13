@@ -7,23 +7,24 @@ jobs:
         name: 发布Web
         runs-on: ubuntu-latest
         steps:
+            #环境依赖
             - uses: actions/checkout@v5
             - uses: cargo-bins/cargo-binstall@main
             - uses: oven-sh/setup-bun@v2
               with:
                 bun-version: latest
-            - uses: arduino/setup-protoc@v3
-            
+            #执行流程
             - name: 安装wasm32-unknown-unknown
               run: rustup target install wasm32-unknown-unknown
             - name: 安装wasm-pack
               run: cargo binstall wasm-pack
-            - name: 构建network包
-              run: cd ./network && wasm-pack build
+            - name: 构建wasm
+              run: bun run build:wasm:release
             - name: 安装依赖包
               run: bun install
             - name: 构建
               run: bun run build
+            #发布
             - name: 发布
               uses: cloudflare/wrangler-action@v3
               with:

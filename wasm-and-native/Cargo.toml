@@ -1,0 +1,25 @@
+[package]
+name = "wasm-and-native"
+version = "0.1.0"
+edition = "2024"
+
+[lib]
+crate-type = ["rlib", "cdylib"]
+
+[dependencies]
+eyre = "0.6.12"
+log = "0.4.28"
+rand = "0.9.2"
+n0-future = "0.2.0"
+iroh = "0.93.1"
+rkyv = "0.8.12"
+tokio = { version = "1.47.1", default-features = false, features = ["sync"] }
+
+console_error_panic_hook = "0.1.7"
+wasm-logger = "0.2.0"
+wasm-bindgen = "0.2.104"
+wasm-bindgen-futures = "0.4.54"
+serde = { version = "1.0.228", features = ["derive"] }
+serde-wasm-bindgen = "0.6.5"
+base64 = "0.22.1"
+tokio-stream = "0.1.17"
