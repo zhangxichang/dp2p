@@ -95,7 +95,7 @@ export const Route = createFileRoute("/viewport/main/$user_id")({
 function Component() {
     const context = Route.useRouteContext()
     const params = Route.useParams()
-    const [search_user_result, set_search_user_result] = useState<Omit<UserInfo, "avatar"> & { avatar_url?: string }>();
+    const [search_user_result, set_search_user_result] = useState<Omit<UserInfo, "avatar"> & { avatar_url?: string }>()
     //好友
     const friends = useLiveQuery(async () => {
         const friends: (Omit<UserInfo, "avatar"> & { id: string, avatar_url?: string })[] = []

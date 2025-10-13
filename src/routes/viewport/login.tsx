@@ -113,7 +113,7 @@ function Component() {
                                                     value={field.value}
                                                     onValueChange={(value) => {
                                                         field.onChange(value)
-                                                        login_form.setValue("avatar_url", users?.find((a) => a.id === value)?.avatar_url);
+                                                        login_form.setValue("avatar_url", users?.find((a) => a.id === value)?.avatar_url)
                                                     }}
                                                 >
                                                     <FormControl>

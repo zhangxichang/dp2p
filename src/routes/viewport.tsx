@@ -14,10 +14,11 @@ import Dexie, { type EntityTable } from "dexie"
 import { ExternalLink, Info, Maximize, Minimize, Minimize2, X } from "lucide-react"
 import React, { useEffect, useMemo, useState } from "react"
 import { createStore } from "zustand"
-import { combine } from "zustand/middleware";
-import { Octokit } from "octokit";
+import { combine } from "zustand/middleware"
+import { Octokit } from "octokit"
 import { open_url } from "@/lib/opener"
 import type { UserInfo } from "@/lib/type"
+import { init as wasm_init } from "wasm-and-native"
 
 const Store = createStore(combine({
     wasm_inited: false,
@@ -38,7 +39,7 @@ export const Route = createFileRoute("/viewport")({
     beforeLoad: async () => {
         const store = Store.getState()
         if (!store.get().wasm_inited) {
-            (await import("wasm-and-native")).init()
+            wasm_init()
             store.set({ wasm_inited: true })
         }
         if (!store.get().dexie) {
@@ -60,7 +61,7 @@ export const Route = createFileRoute("/viewport")({
 function Component() {
     const context = Route.useRouteContext()
     const is_tauri = useMemo(isTauri, [])
-    const navigate = useNavigate();
+    const navigate = useNavigate()
     const [is_maximized, set_is_maximized] = useState(false)
     const [about_dialog_opened, set_about_dialog_opened] = useState(false)
     const [clear_all_data_alert_dialog_opened, set_clear_all_data_alert_dialog_opened] = useState(false)
@@ -70,7 +71,7 @@ function Component() {
         avatar_url: string
         bio: string | null
         html_url: string
-    }[]>();
+    }[]>()
     useEffect(() => { navigate({ to: "/viewport/login" }) }, [])
     useEffect(() => {
         if (!is_tauri) return
