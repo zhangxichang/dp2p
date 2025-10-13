@@ -20,6 +20,7 @@ import { open_url } from "@/lib/opener"
 import type { UserInfo } from "@/lib/type"
 
 const Store = createStore(combine({
+    wasm_inited: false,
     dexie: null as Dexie & {
         users: EntityTable<UserInfo & {
             id: string
@@ -36,6 +37,10 @@ export const Route = createFileRoute("/viewport")({
     pendingComponent: () => <Loading hint_text="正在加载视口" mode="screen" />,
     beforeLoad: async () => {
         const store = Store.getState()
+        if (!store.get().wasm_inited) {
+            (await import("wasm-and-native")).init()
+            store.set({ wasm_inited: true })
+        }
         if (!store.get().dexie) {
             const dexie = new Dexie("database")
             dexie.version(1).stores({
