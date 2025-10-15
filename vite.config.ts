@@ -7,6 +7,9 @@ import { visualizer } from "rollup-plugin-visualizer"
 
 export default defineConfig({
     clearScreen: false,
+    build: {
+        target: "esnext"
+    },
     resolve: {
         alias: {
             "@": path.resolve(__dirname, "./src")

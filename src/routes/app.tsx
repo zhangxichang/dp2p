@@ -18,7 +18,8 @@ import { combine } from "zustand/middleware"
 import { Octokit } from "octokit"
 import { open_url } from "@/lib/opener"
 import type { UserInfo } from "@/lib/type"
-import wasm, { init } from "@self/wasm"
+import wasm_url from "@self/wasm/wasm_bg.wasm?url"
+import wasm_instantiate, { wasm_init } from "@self/wasm"
 
 const Store = createStore(combine({
     wasm_inited: false,
@@ -39,8 +40,8 @@ export const Route = createFileRoute("/app")({
     beforeLoad: async () => {
         const store = Store.getState()
         if (!store.get().wasm_inited) {
-            await wasm()
-            init()
+            await wasm_instantiate({ module_or_path: wasm_url })
+            wasm_init()
             store.set({ wasm_inited: true })
         }
         if (!store.get().dexie) {
