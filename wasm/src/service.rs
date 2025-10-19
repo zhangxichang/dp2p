@@ -1,12 +1,15 @@
-use std::sync::Arc;
+use std::{
+    collections::{HashMap, HashSet},
+    sync::Arc,
+};
 
-use eyre::{Result, bail};
+use eyre::{Result, bail, eyre};
 use iroh::{
     Endpoint, NodeId,
-    endpoint::Connection,
+    endpoint::{Connection, RecvStream, SendStream},
     protocol::{AcceptError, ProtocolHandler},
 };
-use n0_future::task::spawn;
+use parking_lot::{Mutex, RwLock};
 use rkyv::Archive;
 use tokio::sync::{mpsc, oneshot};
 
@@ -15,13 +18,20 @@ pub const ALPN: &[u8] = b"service/v1";
 #[derive(Archive, rkyv::Serialize, rkyv::Deserialize)]
 enum Request {
     UserInfo,
-    AddFriend,
+    Friend,
+    Chat,
 }
 
 #[derive(Archive, rkyv::Serialize, rkyv::Deserialize)]
 enum Response {
     UserInfo(UserInfo),
-    AddFriend(bool),
+    Friend(bool),
+    Chat(Result<(), RequestChatError>),
+}
+
+#[derive(Archive, rkyv::Serialize, rkyv::Deserialize)]
+enum RequestChatError {
+    NotFriend,
 }
 
 #[derive(
@@ -33,23 +43,98 @@ pub struct UserInfo {
     pub bio: Option<String>,
 }
 
+pub struct FriendRequest {
+    node_id: NodeId,
+    sender: oneshot::Sender<bool>,
+}
+impl FriendRequest {
+    pub fn node_id(&self) -> NodeId {
+        self.node_id
+    }
+    pub fn accept(self) -> Result<()> {
+        self.sender
+            .send(true)
+            .map_err(|_| eyre!("发送同意好友请求消息失败"))
+    }
+    pub fn reject(self) -> Result<()> {
+        self.sender
+            .send(false)
+            .map_err(|_| eyre!("发送拒绝好友请求消息失败"))
+    }
+}
+
 #[derive(Debug, Clone)]
 pub struct Service {
     endpoint: Endpoint,
-    user_info: Arc<UserInfo>,
-    friend_request_sender: mpsc::UnboundedSender<(NodeId, oneshot::Sender<bool>)>,
+    user_info: Arc<RwLock<UserInfo>>,
+    friend_request_sender: mpsc::UnboundedSender<FriendRequest>,
+    friends: Arc<RwLock<HashSet<NodeId>>>,
+    chats: Arc<RwLock<HashMap<NodeId, Arc<Mutex<RecvStream>>>>>,
 }
 impl Service {
     pub fn new(
         endpoint: Endpoint,
         user_info: UserInfo,
-        friend_request_sender: mpsc::UnboundedSender<(NodeId, oneshot::Sender<bool>)>,
-    ) -> Self {
-        Self {
-            endpoint,
-            user_info: Arc::new(user_info),
-            friend_request_sender,
+    ) -> (Self, mpsc::UnboundedReceiver<FriendRequest>) {
+        let (friend_request_sender, friend_request_receiver) = mpsc::unbounded_channel();
+        (
+            Self {
+                endpoint,
+                user_info: Arc::new(RwLock::new(user_info)),
+                friend_request_sender,
+                friends: Default::default(),
+                chats: Default::default(),
+            },
+            friend_request_receiver,
+        )
+    }
+    async fn handle_connection(&self, connection: Connection) -> Result<()> {
+        if let Ok((mut send, mut recv)) = connection.accept_bi().await {
+            if let Ok(data) = recv.read_to_end(usize::MAX).await {
+                match rkyv::from_bytes::<Request, rkyv::rancor::Error>(&data)? {
+                    Request::UserInfo => {
+                        let user_info = self.user_info.read().clone();
+                        send.write_all(&rkyv::to_bytes::<rkyv::rancor::Error>(
+                            &Response::UserInfo(user_info),
+                        )?)
+                        .await?;
+                        send.finish()?;
+                    }
+                    Request::Friend => {
+                        let node_id = connection.remote_node_id()?;
+                        let (sender, receiver) = oneshot::channel::<bool>();
+                        self.friend_request_sender
+                            .send(FriendRequest { node_id, sender })?;
+                        let result = receiver.await?;
+                        send.write_all(&rkyv::to_bytes::<rkyv::rancor::Error>(&Response::Friend(
+                            result,
+                        ))?)
+                        .await?;
+                        send.finish()?;
+                    }
+                    Request::Chat => {
+                        if self.friends.read().contains(&connection.remote_node_id()?) {
+                            send.write_all(&rkyv::to_bytes::<rkyv::rancor::Error>(
+                                &Response::Chat(Ok(())),
+                            )?)
+                            .await?;
+                            send.finish()?;
+                            self.chats
+                                .write()
+                                .insert(connection.remote_node_id()?, Arc::new(Mutex::new(recv)));
+                        } else {
+                            send.write_all(&rkyv::to_bytes::<rkyv::rancor::Error>(
+                                &Response::Chat(Err(RequestChatError::NotFriend)),
+                            )?)
+                            .await?;
+                            send.finish()?;
+                        }
+                    }
+                }
+            }
         }
+        connection.closed().await;
+        Ok(())
     }
     pub async fn request_user_info(&self, node_id: NodeId) -> Result<UserInfo> {
         let connection = self.endpoint.connect(node_id, ALPN).await?;
@@ -68,10 +153,10 @@ impl Service {
     pub async fn request_friend(&self, node_id: NodeId) -> Result<bool> {
         let connection = self.endpoint.connect(node_id, ALPN).await?;
         let (mut send, mut recv) = connection.open_bi().await?;
-        send.write_all(&rkyv::to_bytes::<rkyv::rancor::Error>(&Request::AddFriend)?)
+        send.write_all(&rkyv::to_bytes::<rkyv::rancor::Error>(&Request::Friend)?)
             .await?;
         send.finish()?;
-        let Response::AddFriend(result) = rkyv::from_bytes::<Response, rkyv::rancor::Error>(
+        let Response::Friend(result) = rkyv::from_bytes::<Response, rkyv::rancor::Error>(
             &recv.read_to_end(usize::MAX).await?,
         )?
         else {
@@ -79,48 +164,36 @@ impl Service {
         };
         Ok(result)
     }
+    pub fn set_friends(&self, friends: Vec<NodeId>) {
+        *self.friends.write() = friends.into_iter().collect();
+    }
+    pub async fn request_chat(&self, node_id: NodeId) -> Result<(SendStream, RecvStream)> {
+        let connection = self.endpoint.connect(node_id, ALPN).await?;
+        let (mut send, mut recv) = connection.open_bi().await?;
+        send.write_all(&rkyv::to_bytes::<rkyv::rancor::Error>(&Request::Chat)?)
+            .await?;
+        send.finish()?;
+        let Response::Chat(result) = rkyv::from_bytes::<Response, rkyv::rancor::Error>(
+            &recv.read_to_end(usize::MAX).await?,
+        )?
+        else {
+            bail!("响应数据非预期");
+        };
+        if let Err(request_chat_error) = result {
+            match request_chat_error {
+                RequestChatError::NotFriend => bail!("你不是对方的好友"),
+            }
+        }
+        Ok((send, recv))
+    }
+    pub fn get_chat_recv(&self, node_id: NodeId) -> Option<Arc<Mutex<RecvStream>>> {
+        self.chats.read().get(&node_id).cloned()
+    }
 }
 impl ProtocolHandler for Service {
     async fn accept(&self, connection: Connection) -> Result<(), AcceptError> {
-        while let Ok((mut send, mut recv)) = connection.accept_bi().await {
-            spawn({
-                let node_id = connection.remote_node_id()?;
-                let user_info = self.user_info.clone();
-                let friend_request_sender = self.friend_request_sender.clone();
-                async move {
-                    if let Err(err) = async {
-                        while let Ok(data) = recv.read_to_end(usize::MAX).await {
-                            match rkyv::from_bytes::<Request, rkyv::rancor::Error>(&data)? {
-                                Request::UserInfo => {
-                                    send.write_all(&rkyv::to_bytes::<rkyv::rancor::Error>(
-                                        &Response::UserInfo((*user_info).clone()),
-                                    )?)
-                                    .await?;
-                                    send.finish()?;
-                                    break;
-                                }
-                                Request::AddFriend => {
-                                    let (sender, receiver) = oneshot::channel::<bool>();
-                                    friend_request_sender.send((node_id, sender))?;
-                                    let result = receiver.await?;
-                                    send.write_all(&rkyv::to_bytes::<rkyv::rancor::Error>(
-                                        &Response::AddFriend(result),
-                                    )?)
-                                    .await?;
-                                    send.finish()?;
-                                    break;
-                                }
-                            }
-                        }
-                        eyre::Ok(())
-                    }
-                    .await
-                    {
-                        log::error!("连接处理错误:{}", err);
-                    }
-                }
-            });
-        }
-        Ok(())
+        self.handle_connection(connection)
+            .await
+            .map_err(|err| AcceptError::User { source: err.into() })
     }
 }

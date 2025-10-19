@@ -1,5 +1,5 @@
 ```
-bun run build:wasm:dev
+bun run dev:wasm
 bun install
 bun run dev
 ```

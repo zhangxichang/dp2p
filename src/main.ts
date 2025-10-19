@@ -1,6 +1,6 @@
-import { render } from "./render"
+import { render } from "./render";
 
 function main() {
-    render()
+  render();
 }
-main()
+main();

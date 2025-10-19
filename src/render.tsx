@@ -1,21 +1,27 @@
-import { StrictMode } from "react"
-import { createRoot } from "react-dom/client"
-import { RouterProvider, createMemoryHistory, createRouter } from "@tanstack/react-router"
-import { routeTree } from "./routeTree.gen"
+import { StrictMode } from "react";
+import { createRoot } from "react-dom/client";
+import {
+  RouterProvider,
+  createMemoryHistory,
+  createRouter,
+} from "@tanstack/react-router";
+import { routeTree } from "./routeTree.gen";
 
 const Router = createRouter({
-    routeTree,
-    history: createMemoryHistory({
-        initialEntries: ["/app"]
-    })
-})
+  routeTree,
+  history: createMemoryHistory({
+    initialEntries: ["/app"],
+  }),
+});
 declare module "@tanstack/react-router" {
-    interface Register {
-        router: typeof Router
-    }
+  interface Register {
+    router: typeof Router;
+  }
 }
 export function render() {
-    createRoot(document.body).render(<StrictMode>
-        <RouterProvider router={Router} />
-    </StrictMode>)
+  createRoot(document.body).render(
+    <StrictMode>
+      <RouterProvider router={Router} />
+    </StrictMode>,
+  );
 }
