@@ -16,7 +16,6 @@ tokio = { version = "1.48.0", default-features = false, features = [
     "parking_lot",
     "sync",
 ] }
-parking_lot = "0.12.5"
 
 console_error_panic_hook = "0.1.7"
 wasm-logger = "0.2.0"

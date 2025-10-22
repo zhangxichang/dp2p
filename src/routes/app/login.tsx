@@ -106,8 +106,9 @@ function Component() {
           (await blob_to_data_url(new Blob([Uint8Array.from(value.avatar)]))),
         bio: value.bio,
       });
-      if (value.id === login_form.getValues("user_id") && is_login_form_reset)
+      if (value.id === login_form.getValues("user_id") && is_login_form_reset) {
         is_login_form_reset = false;
+      }
     }
     if (is_login_form_reset) login_form.reset();
     return users;
@@ -182,7 +183,7 @@ function Component() {
                                   <Avatar>
                                     <AvatarImage src={value.avatar_url} />
                                     <AvatarFallback>
-                                      {value.name[0]}
+                                      {value.name.at(0)}
                                     </AvatarFallback>
                                   </Avatar>
                                   <span>{value.name}</span>
@@ -227,16 +228,15 @@ function Component() {
                           accept="image/*"
                           style={{ display: "none" }}
                           onChange={async (e) => {
-                            const file = e.target.files?.[0];
-                            if (file) {
-                              if (!file.type.startsWith("image/")) {
-                                register_form.setError("avatar_url", {
-                                  message: "请选择一个图片文件",
-                                });
-                              } else {
-                                register_form.clearErrors("avatar_url");
-                                field.onChange(await blob_to_data_url(file));
-                              }
+                            const file = e.target.files?.item(0);
+                            if (!file) return;
+                            if (!file.type.startsWith("image/")) {
+                              register_form.setError("avatar_url", {
+                                message: "请选择一个图片文件",
+                              });
+                            } else {
+                              register_form.clearErrors("avatar_url");
+                              field.onChange(await blob_to_data_url(file));
                             }
                           }}
                         />

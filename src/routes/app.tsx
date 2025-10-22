@@ -82,6 +82,16 @@ const Store = createStore(
                 owner: string;
                 id: string;
               },
+              "owner" | "id"
+            >;
+            chat_records: EntityTable<
+              {
+                id: number;
+                timestamp: number;
+                sender: string;
+                receiver: string;
+                message: string;
+              },
               "id"
             >;
           })
@@ -104,7 +114,8 @@ export const Route = createFileRoute("/app")({
       const dexie = new Dexie("database");
       dexie.version(1).stores({
         users: "&id,key,name,avatar,bio",
-        friends: "&id,owner,name,avatar,bio",
+        friends: "&[owner+id],name,avatar,bio",
+        chat_records: "++id,timestamp,sender,receiver,message",
       });
       store.set({ dexie: (await dexie.open()) as any });
     }
@@ -230,7 +241,7 @@ function Component() {
                             <Avatar>
                               <AvatarImage src={developer.avatar_url} />
                               <AvatarFallback>
-                                {developer.name?.[0]}
+                                {developer.name?.at(0)}
                               </AvatarFallback>
                             </Avatar>
                           </ItemMedia>

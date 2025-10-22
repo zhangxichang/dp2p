@@ -48,12 +48,19 @@ import { useForm } from "react-hook-form";
 import { zodResolver } from "@hookform/resolvers/zod";
 import { Input } from "@/components/ui/input";
 import { toast } from "sonner";
-import { Node, SecretKey, UserInfo as WasmUserInfo } from "@zhangxichang/wasm";
+import {
+  Connection,
+  Node,
+  SecretKey,
+  UserInfo as WasmUserInfo,
+} from "@zhangxichang/wasm";
+import type Dexie from "dexie";
 
 const Store = createStore(
   combine(
     {
       node: null as Node | null,
+      chat_connections: null as Map<string, Connection> | null,
     },
     (set, get) => ({ set, get }),
   ),
@@ -62,83 +69,31 @@ export const Route = createFileRoute("/app/home/$user_id")({
   component: Component,
   pendingComponent: () => <Loading hint_text="正在初始化主界面" />,
   beforeLoad: async ({ context, params }) => {
-    const user = (await context.dexie.users.get(params.user_id))!;
     const store = Store.getState();
+    const user = (await context.dexie.users
+      .where("id")
+      .equals(params.user_id)
+      .last())!;
     if (!store.get().node) {
       const node = await Node.new(
         SecretKey.from(user.key),
         WasmUserInfo.new(user.name, user.avatar, user.bio),
       );
       store.set({ node });
-      (async () => {
-        while (true) {
-          const friend_request = await node.friend_request_next();
-          if (!friend_request) break;
-          const user_info = await node.request_user_info(
-            friend_request.node_id,
-          );
-          const user_avatar_url =
-            user_info.avatar &&
-            (await blob_to_data_url(
-              new Blob([Uint8Array.from(user_info.avatar)]),
-            ));
-          const toast_id = toast(
-            <Item className="flex-1">
-              <ItemMedia>
-                <Avatar>
-                  <AvatarImage src={user_avatar_url} />
-                  <AvatarFallback>{user_info.name[0]}</AvatarFallback>
-                </Avatar>
-              </ItemMedia>
-              <ItemContent>
-                <ItemTitle>{user_info.name}</ItemTitle>
-                <ItemDescription>{user_info.bio}</ItemDescription>
-              </ItemContent>
-              <ItemActions>
-                <Button
-                  variant="outline"
-                  size="icon-sm"
-                  onClick={async () => {
-                    const id = friend_request.node_id;
-                    friend_request.accept();
-                    await context.dexie.friends.add({
-                      owner: user.id,
-                      id,
-                      name: user_info.name,
-                      avatar: user_info.avatar,
-                      bio: user_info.bio,
-                    });
-                    toast.dismiss(toast_id);
-                  }}
-                >
-                  <Check />
-                </Button>
-                <Button
-                  variant="outline"
-                  size="icon-sm"
-                  onClick={() => {
-                    friend_request.reject();
-                    toast.dismiss(toast_id);
-                  }}
-                >
-                  <X />
-                </Button>
-              </ItemActions>
-            </Item>,
-            {
-              duration: Infinity,
-              classNames: {
-                content: "flex-1",
-                title: "flex-1 flex",
-              },
-            },
-          );
-        }
-      })();
+      handle_friend_request(node, context.dexie, user.id);
+    }
+    if (!store.get().chat_connections) {
+      const chat_connections = new Map<string, Connection>();
+      store.set({ chat_connections });
+      handle_chat_request(
+        store.get().node!,
+        context.dexie,
+        user.id,
+        chat_connections,
+      );
     }
     return {
       user: {
-        id: user.id,
         name: user.name,
         avatar_url:
           user.avatar &&
@@ -146,6 +101,7 @@ export const Route = createFileRoute("/app/home/$user_id")({
         bio: user.bio,
       },
       node: store.get().node!,
+      chat_connections: store.get().chat_connections!,
     };
   },
   onLeave: () =>
@@ -159,6 +115,10 @@ function Component() {
   const [search_user_result, set_search_user_result] = useState<
     Omit<UserInfo, "avatar"> & { id: string; avatar_url?: string }
   >();
+  const [
+    send_friend_request_button_disabled,
+    set_send_friend_request_button_disabled,
+  ] = useState(false);
   //好友
   const friends = useLiveQuery(async () => {
     const friends: (Omit<UserInfo, "avatar"> & {
@@ -167,7 +127,7 @@ function Component() {
     })[] = [];
     for (const value of await context.dexie.friends
       .where("owner")
-      .equals(context.user.id)
+      .equals(params.user_id)
       .toArray()) {
       friends.push({
         id: value.id,
@@ -178,12 +138,11 @@ function Component() {
         bio: value.bio,
       });
     }
-    context.node.set_friends(friends.map((friend) => friend.id));
     return friends;
   });
   //好友列表
   const friend_list_ref = useRef(null);
-  const friend_list_rows = useVirtualizer({
+  const friend_virtualizer = useVirtualizer({
     getScrollElement: () => friend_list_ref.current,
     count: friends?.length ?? 0,
     estimateSize: () => 80,
@@ -204,8 +163,8 @@ function Component() {
     },
   });
   return (
-    <div className="flex-1 flex overflow-hidden">
-      <div className="w-80 flex flex-col border-t border-r rounded-tr-md">
+    <div className="flex-1 flex min-h-0">
+      <div className="w-80 flex flex-col border-t border-r rounded-tr-md min-h-0">
         {/* 好友 */}
         <div className="flex items-center p-2 gap-2 border-b">
           <Contact />
@@ -242,37 +201,50 @@ function Component() {
                               placeholder="输入用户ID"
                               disabled={search_user_form.formState.isSubmitting}
                               onKeyDown={async (e) => {
-                                if (e.key === "Enter") {
-                                  e.preventDefault();
-                                  await search_user_form.handleSubmit(
-                                    async (form) => {
-                                      try {
-                                        const user_info =
-                                          await context.node.request_user_info(
+                                if (e.key !== "Enter") return;
+                                e.preventDefault();
+                                await search_user_form.handleSubmit(
+                                  async (form) => {
+                                    try {
+                                      if (
+                                        (await context.dexie.friends
+                                          .where("[owner+id]")
+                                          .equals([
+                                            params.user_id,
                                             form.user_id,
-                                          );
-                                        set_search_user_result({
-                                          id: form.user_id,
-                                          name: user_info.name,
-                                          avatar_url:
-                                            user_info.avatar &&
-                                            (await blob_to_data_url(
-                                              new Blob([
-                                                Uint8Array.from(
-                                                  user_info.avatar,
-                                                ),
-                                              ]),
-                                            )),
-                                          bio: user_info.bio,
-                                        });
-                                      } catch (error) {
-                                        search_user_form.setError("user_id", {
-                                          message: `${error}`,
-                                        });
+                                          ])
+                                          .count()) !== 0
+                                      ) {
+                                        throw "已经是你的好友了";
                                       }
-                                    },
-                                  )();
-                                }
+                                      const user_info =
+                                        await context.node.request_user_info(
+                                          form.user_id,
+                                        );
+                                      set_search_user_result({
+                                        id: form.user_id,
+                                        name: user_info.name(),
+                                        avatar_url:
+                                          user_info.avatar() &&
+                                          (await blob_to_data_url(
+                                            new Blob([
+                                              Uint8Array.from(
+                                                user_info.avatar()!,
+                                              ),
+                                            ]),
+                                          )),
+                                        bio: user_info.bio(),
+                                      });
+                                      set_send_friend_request_button_disabled(
+                                        false,
+                                      );
+                                    } catch (error) {
+                                      search_user_form.setError("user_id", {
+                                        message: `${error}`,
+                                      });
+                                    }
+                                  },
+                                )();
                               }}
                             />
                           </FormControl>
@@ -288,7 +260,7 @@ function Component() {
                       <Avatar>
                         <AvatarImage src={search_user_result.avatar_url} />
                         <AvatarFallback>
-                          {search_user_result.name[0]}
+                          {search_user_result.name.at(0)}
                         </AvatarFallback>
                       </Avatar>
                     </ItemMedia>
@@ -304,7 +276,9 @@ function Component() {
                           <Button
                             variant="outline"
                             size="icon-sm"
-                            onClick={() =>
+                            disabled={send_friend_request_button_disabled}
+                            onClick={() => {
+                              set_send_friend_request_button_disabled(true);
                               toast.promise(
                                 async () => {
                                   if (
@@ -312,11 +286,21 @@ function Component() {
                                       search_user_result.id,
                                     ))
                                   ) {
-                                    throw new Error("对方拒绝好友请求");
-                                  } else {
+                                    throw "对方拒绝好友请求";
+                                  }
+                                },
+                                {
+                                  loading: "等待回应好友请求",
+                                  error: (error) => {
+                                    set_send_friend_request_button_disabled(
+                                      false,
+                                    );
+                                    return `${error}`;
+                                  },
+                                  success: () => {
                                     (async () => {
                                       await context.dexie.friends.add({
-                                        owner: context.user.id,
+                                        owner: params.user_id,
                                         id: search_user_result.id,
                                         name: search_user_result.name,
                                         avatar: search_user_result.avatar_url
@@ -329,15 +313,11 @@ function Component() {
                                         bio: search_user_result.bio,
                                       });
                                     })();
-                                  }
+                                    return "对方同意好友请求";
+                                  },
                                 },
-                                {
-                                  loading: "等待回应好友请求",
-                                  error: (error) => error,
-                                  success: () => "对方同意好友请求",
-                                },
-                              )
-                            }
+                              );
+                            }}
                           >
                             <Send />
                           </Button>
@@ -354,10 +334,10 @@ function Component() {
         <div ref={friend_list_ref} className="flex-1 overflow-y-auto">
           <div
             className="w-full relative"
-            style={{ height: `${friend_list_rows.getTotalSize()}px` }}
+            style={{ height: friend_virtualizer.getTotalSize() }}
           >
             {friends &&
-              friend_list_rows.getVirtualItems().map((value) => (
+              friend_virtualizer.getVirtualItems().map((value) => (
                 <Item key={value.key} className="rounded-none" asChild>
                   <Link
                     to="/app/home/$user_id/chat/$friend_id"
@@ -372,7 +352,7 @@ function Component() {
                       <Avatar className="size-10">
                         <AvatarImage src={friends[value.index].avatar_url} />
                         <AvatarFallback>
-                          {friends[value.index].name[0]}
+                          {friends[value.index].name.at(0)}
                         </AvatarFallback>
                       </Avatar>
                     </ItemMedia>
@@ -396,7 +376,7 @@ function Component() {
                   <ItemMedia>
                     <Avatar className="size-10">
                       <AvatarImage src={context.user.avatar_url} />
-                      <AvatarFallback>{context.user.name[0]}</AvatarFallback>
+                      <AvatarFallback>{context.user.name.at(0)}</AvatarFallback>
                     </Avatar>
                   </ItemMedia>
                   <ItemContent>
@@ -408,7 +388,7 @@ function Component() {
             </DropdownMenuTrigger>
             <DropdownMenuContent align="start">
               <DropdownMenuItem
-                onClick={() => navigator.clipboard.writeText(context.user.id)}
+                onClick={() => navigator.clipboard.writeText(params.user_id)}
               >
                 <Clipboard />
                 <span>复制用户ID</span>
@@ -420,4 +400,109 @@ function Component() {
       <Outlet />
     </div>
   );
+}
+
+async function handle_friend_request(
+  node: Node,
+  dexie: Dexie,
+  user_id: string,
+) {
+  while (true) {
+    const friend_request = await node.friend_request_next();
+    if (!friend_request) break;
+    (async () => {
+      const user_info = await node.request_user_info(
+        friend_request.remote_node_id(),
+      );
+      const user_avatar_url =
+        user_info.avatar() &&
+        (await blob_to_data_url(
+          new Blob([Uint8Array.from(user_info.avatar()!)]),
+        ));
+      const toast_id = toast(
+        <Item className="flex-1">
+          <ItemMedia>
+            <Avatar>
+              <AvatarImage src={user_avatar_url} />
+              <AvatarFallback>{user_info.name().at(0)}</AvatarFallback>
+            </Avatar>
+          </ItemMedia>
+          <ItemContent>
+            <ItemTitle>{user_info.name()}</ItemTitle>
+            <ItemDescription>{user_info.bio()}</ItemDescription>
+          </ItemContent>
+          <ItemActions>
+            <Button
+              variant="outline"
+              size="icon-sm"
+              onClick={async () => {
+                const friend_id = friend_request.remote_node_id();
+                await dexie.table("friends").add({
+                  owner: user_id,
+                  id: friend_id,
+                  name: user_info.name(),
+                  avatar: user_info.avatar(),
+                  bio: user_info.bio(),
+                });
+                friend_request.accept();
+                toast.dismiss(toast_id);
+              }}
+            >
+              <Check />
+            </Button>
+            <Button
+              variant="outline"
+              size="icon-sm"
+              onClick={() => {
+                friend_request.reject();
+                toast.dismiss(toast_id);
+              }}
+            >
+              <X />
+            </Button>
+          </ItemActions>
+        </Item>,
+        {
+          duration: Infinity,
+          classNames: {
+            content: "flex-1",
+            title: "flex-1 flex",
+          },
+        },
+      );
+    })();
+  }
+}
+
+async function handle_chat_request(
+  node: Node,
+  dexie: Dexie,
+  user_id: string,
+  chat_connections: Map<string, Connection>,
+) {
+  while (true) {
+    const chat_request = await node.chat_request_next();
+    if (!chat_request) break;
+    (async () => {
+      const friend_id = chat_request.remote_node_id();
+      if (!(await dexie.table("friends").get([user_id, friend_id]))) {
+        chat_request.reject();
+      } else {
+        const connection = chat_request.accept();
+        chat_connections.set(friend_id, connection);
+        while (true) {
+          const connection = chat_connections.get(friend_id);
+          if (!connection) break;
+          const message = await connection.read();
+          if (!message) break;
+          dexie.table("chat_records").add({
+            timestamp: Date.now(),
+            sender: friend_id,
+            receiver: user_id,
+            message,
+          });
+        }
+      }
+    })();
+  }
 }
