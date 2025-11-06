@@ -1,0 +1,62 @@
+name: 应用发布
+on:
+  push:
+    tags: [v*]
+jobs:
+  web:
+    name: Web
+    runs-on: ubuntu-latest
+    steps:
+      #环境依赖
+      - uses: actions/checkout@v5
+      - uses: cargo-bins/cargo-binstall@main
+      - uses: oven-sh/setup-bun@v2
+        with:
+          bun-version: latest
+      #执行流程
+      - name: 安装wasm32-unknown-unknown
+        run: rustup target install wasm32-unknown-unknown
+      - name: 安装wasm-pack
+        run: cargo binstall wasm-pack
+      - name: 构建依赖包
+        run: bun run build:deps
+      - name: 安装依赖包
+        run: bun install
+      - name: 构建
+        run: bun run build
+      #发布
+      - name: 发布
+        uses: cloudflare/wrangler-action@v3
+        with:
+          wranglerVersion: latest
+          packageManager: bun
+          accountId: ${{secrets.CLOUDFLARE_ACCOUNT_ID}}
+          apiToken: ${{secrets.CLOUDFLARE_API_TOKEN}}
+  windows:
+    name: Windows
+    runs-on: windows-latest
+    steps:
+      #环境依赖
+      - uses: actions/checkout@v5
+      - uses: cargo-bins/cargo-binstall@main
+      - uses: oven-sh/setup-bun@v2
+        with:
+          bun-version: latest
+      #执行流程
+      - name: 安装wasm32-unknown-unknown
+        run: rustup target install wasm32-unknown-unknown
+      - name: 安装wasm-pack
+        run: cargo binstall wasm-pack
+      - name: 构建依赖包
+        run: bun run build:deps
+      - name: 安装依赖包
+        run: bun install
+      - name: 构建
+        run: bun tauri build
+      #发布
+      - name: 发布
+        uses: softprops/action-gh-release@v2
+        env:
+          GITHUB_TOKEN: ${{secrets.GITHUB_TOKEN}}
+        with:
+          files: ./target/release/starlink.exe

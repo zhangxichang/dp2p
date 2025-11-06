@@ -1,5 +1,5 @@
 [package]
-name = "native"
+name = "starlink"
 version = "0.1.0"
 edition = "2024"
 
@@ -23,7 +23,3 @@ tauri-plugin-fs = "2.4.4"
 tauri-plugin-sql = { version = "2.3.1", features = ["sqlite"] }
 
 endpoint = { path = "../crates/endpoint" }
-thiserror = "2.0.17"
-serde = { version = "1.0.228", features = ["derive"] }
-parking_lot = "0.12.5"
-tokio = { version = "1.48.0", features = ["fs"] }

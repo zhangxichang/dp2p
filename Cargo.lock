@@ -3301,26 +3301,6 @@ dependencies = [
 ]
 
 [[package]]
-name = "native"
-version = "0.1.0"
-dependencies = [
- "endpoint",
- "parking_lot",
- "serde",
- "serde_json",
- "tauri",
- "tauri-build",
- "tauri-plugin-fs",
- "tauri-plugin-opener",
- "tauri-plugin-os",
- "tauri-plugin-prevent-default",
- "tauri-plugin-single-instance",
- "tauri-plugin-sql",
- "thiserror 2.0.17",
- "tokio",
-]
-
-[[package]]
 name = "ndk"
 version = "0.9.0"
 source = "registry+https://github.com/rust-lang/crates.io-index"
@@ -5778,6 +5758,22 @@ name = "stable_deref_trait"
 version = "1.2.1"
 source = "registry+https://github.com/rust-lang/crates.io-index"
 checksum = "6ce2be8dc25455e1f91df71bfa12ad37d7af1092ae736f3a6cd0e37bc7810596"
+
+[[package]]
+name = "starlink"
+version = "0.1.0"
+dependencies = [
+ "endpoint",
+ "serde_json",
+ "tauri",
+ "tauri-build",
+ "tauri-plugin-fs",
+ "tauri-plugin-opener",
+ "tauri-plugin-os",
+ "tauri-plugin-prevent-default",
+ "tauri-plugin-single-instance",
+ "tauri-plugin-sql",
+]
 
 [[package]]
 name = "static_assertions"
