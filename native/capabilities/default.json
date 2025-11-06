@@ -11,6 +11,9 @@
     "core:window:allow-close",
     "core:window:allow-set-title",
     "os:default",
-    "opener:default"
+    "opener:default",
+    "fs:default",
+    "sql:default",
+    "sql:allow-execute"
   ]
 }

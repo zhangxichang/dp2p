@@ -43,10 +43,7 @@ import {
   MenubarTrigger,
 } from "@/components/ui/menubar";
 import { Toaster } from "@/components/ui/sonner";
-import { createFileRoute, Outlet } from "@tanstack/react-router";
-// #if TAURI_ENV_PLATFORM
-import { getCurrentWindow } from "@tauri-apps/api/window";
-// #endif
+import { createFileRoute, Outlet, useNavigate } from "@tanstack/react-router";
 import {
   ExternalLink,
   Info,
@@ -55,17 +52,22 @@ import {
   Minimize2,
   X,
 } from "lucide-react";
-import React, { useEffect, useMemo, useState } from "react";
+import React, { useEffect, useState } from "react";
 import { createStore } from "zustand";
 import { combine } from "zustand/middleware";
 import { Octokit } from "octokit";
 import { open_url } from "@/lib/opener";
-import { State } from "@/lib/state";
+import { Database } from "@/lib/database";
+
+let tauri_window: typeof import("@tauri-apps/api/window") | undefined;
+if (import.meta.env.TAURI_ENV_PLATFORM) {
+  tauri_window = await import("@tauri-apps/api/window");
+}
 
 const Store = createStore(
   combine(
     {
-      state: new State(),
+      db: new Database(),
     },
     (set, get) => ({ set, get }),
   ),
@@ -75,20 +77,15 @@ export const Route = createFileRoute("/app")({
   pendingComponent: () => <Loading hint_text="正在初始化应用" mode="screen" />,
   beforeLoad: async () => {
     const store = Store.getState();
-    await store.get().state.init();
+    await store.get().db.init();
     return {
-      state: store.get().state,
+      db: store.get().db,
     };
   },
 });
 function Component() {
-  let is_tauri = useMemo(() => {
-    let is_tauri = false;
-    // #if TAURI_ENV_PLATFORM
-    is_tauri = true;
-    // #endif
-    return is_tauri;
-  }, []);
+  const context = Route.useRouteContext();
+  const navigate = useNavigate();
   const [is_maximized, set_is_maximized] = useState(false);
   const [about_dialog_opened, set_about_dialog_opened] = useState(false);
   const [
@@ -104,30 +101,43 @@ function Component() {
       html_url: string;
     }[]
   >();
-  //子路由导航
-  useEffect(() => {}, []);
-  // #if TAURI_ENV_PLATFORM
+  //导航到子路由
   useEffect(() => {
-    //设置窗口标题
-    getCurrentWindow().setTitle(document.title);
-    //监控网页标题变化
-    const title_observer = new MutationObserver(
-      async () => await getCurrentWindow().setTitle(document.title),
-    );
-    title_observer.observe(document.querySelector("title")!, {
-      childList: true,
-      characterData: true,
-    });
-    //监控窗口缩放
-    const un_on_resized = getCurrentWindow().onResized(async () =>
-      set_is_maximized(await getCurrentWindow().isMaximized()),
-    );
-    return () => {
-      title_observer.disconnect();
-      (async () => (await un_on_resized)())();
-    };
+    navigate({ to: "/app/login" });
   }, []);
-  // #endif
+  //配置窗口
+  useEffect(() => {
+    if (tauri_window) {
+      const cleanup = (async () => {
+        //设置窗口标题
+        await tauri_window.getCurrentWindow().setTitle(document.title);
+        //监控网页标题变化
+        const title_observer = new MutationObserver(
+          async () =>
+            await tauri_window.getCurrentWindow().setTitle(document.title),
+        );
+        title_observer.observe(document.querySelector("title")!, {
+          childList: true,
+          characterData: true,
+        });
+        //监控窗口缩放
+        const un_on_resized = tauri_window
+          .getCurrentWindow()
+          .onResized(async () =>
+            set_is_maximized(
+              await tauri_window.getCurrentWindow().isMaximized(),
+            ),
+          );
+        return async () => {
+          title_observer.disconnect();
+          (await un_on_resized)();
+        };
+      })();
+      return () => {
+        (async () => await (await cleanup)())();
+      };
+    }
+  }, []);
   //获取贡献者信息
   useEffect(() => {
     (async () => {
@@ -236,32 +246,45 @@ function Component() {
                 </AlertDialogHeader>
                 <AlertDialogFooter>
                   <AlertDialogCancel>取消</AlertDialogCancel>
-                  <AlertDialogAction>确定</AlertDialogAction>
+                  <AlertDialogAction
+                    onClick={async () => {
+                      await navigate({ to: "/app/login" });
+                      await context.db.reset();
+                    }}
+                  >
+                    确定
+                  </AlertDialogAction>
                 </AlertDialogFooter>
               </AlertDialogContent>
             </AlertDialog>
           </div>
           {/* 窗口控制按钮 */}
-          {is_tauri && (
+          {tauri_window && (
             <div data-tauri-drag-region className="flex-1 flex justify-end">
               <Button
                 variant={"ghost"}
                 className="rounded-none cursor-pointer"
-                onClick={async () => await getCurrentWindow().minimize()}
+                onClick={async () =>
+                  await tauri_window.getCurrentWindow().minimize()
+                }
               >
                 <Minimize2 />
               </Button>
               <Button
                 variant={"ghost"}
                 className="rounded-none cursor-pointer"
-                onClick={async () => await getCurrentWindow().toggleMaximize()}
+                onClick={async () =>
+                  await tauri_window.getCurrentWindow().toggleMaximize()
+                }
               >
                 {!is_maximized ? <Maximize /> : <Minimize />}
               </Button>
               <Button
                 variant={"ghost"}
                 className="rounded-none cursor-pointer hover:bg-red-600 hover:text-white active:bg-red-500"
-                onClick={async () => await getCurrentWindow().close()}
+                onClick={async () =>
+                  await tauri_window.getCurrentWindow().close()
+                }
               >
                 <X />
               </Button>
