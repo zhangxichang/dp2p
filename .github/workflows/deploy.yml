@@ -35,6 +35,8 @@ jobs:
   windows:
     name: Windows
     runs-on: windows-latest
+    permissions:
+      contents: write
     steps:
       #环境依赖
       - uses: actions/checkout@v5
