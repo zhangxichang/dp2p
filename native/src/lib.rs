@@ -41,6 +41,10 @@ pub fn run() {
         .manage(State::default())
         .invoke_handler(tauri::generate_handler![
             file_system::fs_remove_file,
+            file_system::fs_read_file,
+            file_system::fs_create_file,
+            file_system::fs_exists,
+            file_system::fs_remove_dir_all,
             sqlite::sqlite_open,
             sqlite::sqlite_is_open,
             sqlite::sqlite_close,
@@ -49,6 +53,8 @@ pub fn run() {
             sqlite::sqlite_query,
             endpoint::generate_secret_key,
             endpoint::get_secret_key_id,
+            endpoint::endpoint_create,
+            endpoint::endpoint_is_create,
         ])
         .run(tauri::generate_context!())
         .unwrap();

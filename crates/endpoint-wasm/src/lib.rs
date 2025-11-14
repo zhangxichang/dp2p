@@ -1,10 +1,10 @@
-mod error;
+mod into;
 
 use endpoint::{self, service};
 use tokio::sync::{Mutex, mpsc};
 use wasm_bindgen::{JsError, JsValue, prelude::wasm_bindgen};
 
-use crate::error::MapJsError;
+use crate::into::JsErrorExt;
 
 #[wasm_bindgen(start)]
 fn start() {
@@ -53,10 +53,10 @@ impl FriendRequest {
         self.0.remote_id().to_string()
     }
     pub fn accept(self) -> Result<(), JsError> {
-        self.0.accept().mje()
+        self.0.accept().m()
     }
     pub fn reject(self) -> Result<(), JsError> {
-        self.0.reject().mje()
+        self.0.reject().m()
     }
 }
 
@@ -68,10 +68,10 @@ impl ChatRequest {
         self.0.remote_id().to_string()
     }
     pub fn accept(self) -> Result<Connection, JsError> {
-        Ok(Connection(self.0.accept().mje()?))
+        Ok(Connection(self.0.accept().m()?))
     }
     pub fn reject(self) -> Result<(), JsError> {
-        self.0.reject().mje()
+        self.0.reject().m()
     }
 }
 
@@ -114,7 +114,7 @@ impl Endpoint {
                 chat_request_sender,
             )
             .await
-            .mje()?,
+            .m()?,
             friend_request_receiver: Mutex::new(friend_request_receiver),
             chat_request_receiver: Mutex::new(chat_request_receiver),
         })
@@ -148,19 +148,17 @@ impl Endpoint {
             .map(|v| ChatRequest(v))
     }
     pub async fn request_person(&self, id: String) -> Result<Person, JsError> {
-        Ok(Person(
-            self.endpoint.request_person(id.parse()?).await.mje()?,
-        ))
+        Ok(Person(self.endpoint.request_person(id.parse()?).await.m()?))
     }
     pub async fn request_friend(&self, id: String) -> Result<bool, JsError> {
-        Ok(self.endpoint.request_friend(id.parse()?).await.mje()?)
+        Ok(self.endpoint.request_friend(id.parse()?).await.m()?)
     }
     pub async fn request_chat(&self, id: String) -> Result<Option<Connection>, JsError> {
         Ok(self
             .endpoint
             .request_chat(id.parse()?)
             .await
-            .mje()?
+            .m()?
             .map(|v| Connection(v)))
     }
 }

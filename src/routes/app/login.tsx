@@ -17,7 +17,7 @@ import {
   SelectTrigger,
   SelectValue,
 } from "@/components/ui/select";
-import { createFileRoute } from "@tanstack/react-router";
+import { createFileRoute, useNavigate } from "@tanstack/react-router";
 import { useEffect, useMemo, useRef, useState } from "react";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import {
@@ -47,36 +47,20 @@ import { z } from "zod";
 import { Loading } from "@/components/loading";
 import { blob_to_data_url } from "@/lib/blob_to_data_url";
 import { toast } from "sonner";
-import type { DOMPerson, Person, PK } from "@/lib/types";
 import { QueryBuilder } from "@/lib/query_builder";
 import { Errored } from "@/components/errored";
-import { createStore } from "zustand";
-import { combine } from "zustand/middleware";
 import { Endpoint } from "@/lib/endpoint";
+import type { DOMPerson, FileMetadata, ID, PersonData, PK } from "@/lib/types";
+import xxhash from "xxhash-wasm";
 
-const Store = createStore(
-  combine(
-    {
-      endpoint: new Endpoint(),
-    },
-    (set, get) => ({ set, get }),
-  ),
-);
 export const Route = createFileRoute("/app/login")({
   component: Component,
   pendingComponent: () => <Loading hint_text="现在正在加载登录界面了" />,
   errorComponent: () => <Errored hint_text="唉呀~出错了好像" />,
-  beforeLoad: async () => {
-    const store = Store.getState();
-    store.get().endpoint.init();
-    return {
-      endpoint: store.get().endpoint,
-    };
-  },
 });
 function Component() {
   const context = Route.useRouteContext();
-  // const navigate = useNavigate();
+  const navigate = useNavigate();
   const register_avatar_input_ref = useRef<HTMLInputElement>(null);
   const [users, set_users] = useState<(DOMPerson & PK)[]>([]);
   //登录表单规则
@@ -117,30 +101,47 @@ function Component() {
       set_users(
         await Promise.all(
           (
-            await context.db.query<Person & PK>(
+            await context.db.query<PersonData & PK>(
               QueryBuilder.selectFrom("person")
-                .innerJoin("user", "user.pk", "person.pk")
+                .innerJoin("user", "user.person_pk", "person.pk")
                 .select([
                   "person.pk",
                   "person.name",
-                  "person.avatar",
+                  "person.avatar_file_pk",
                   "person.bio",
                 ])
                 .compile(),
             )
-          ).map(
-            async (v) =>
-              ({
-                pk: v.pk,
-                name: v.name,
-                avatar_url:
-                  v.avatar &&
-                  (await blob_to_data_url(
-                    new Blob([Uint8Array.from(v.avatar)]),
-                  )),
-                bio: v.bio,
-              }) satisfies DOMPerson & PK,
-          ),
+          ).map(async (v) => {
+            let avatar_url: string | undefined;
+            if (v.avatar_file_pk) {
+              avatar_url = await blob_to_data_url(
+                new Blob([
+                  Uint8Array.from(
+                    await context.fs.read_file(
+                      `data/${
+                        (
+                          await context.db.query<FileMetadata>(
+                            QueryBuilder.selectFrom("file")
+                              .where("pk", "=", v.avatar_file_pk)
+                              .select(["hash"])
+                              .limit(1)
+                              .compile(),
+                          )
+                        )[0].hash
+                      }`,
+                    ),
+                  ),
+                ]),
+              );
+            }
+            return {
+              pk: v.pk,
+              name: v.name,
+              avatar_url,
+              bio: v.bio,
+            } satisfies DOMPerson & PK;
+          }),
         ),
       );
     };
@@ -307,20 +308,20 @@ function Component() {
             <TabsContent value="login" className="flex flex-col gap-1">
               <Button
                 disabled={login_form.formState.isSubmitting}
-                onClick={login_form.handleSubmit(async (_form) => {
-                  // const row = (
-                  //   await context.db.query<ID>(
-                  //     QueryBuilder.selectFrom("person")
-                  //       .select(["id"])
-                  //       .where("pk", "=", Number(form.person_pk))
-                  //       .limit(1)
-                  //       .compile(),
-                  //   )
-                  // )[0];
-                  // await navigate({
-                  //   to: "/app/home/$user_id",
-                  //   params: { user_id: row.id },
-                  // });
+                onClick={login_form.handleSubmit(async (form) => {
+                  const row = (
+                    await context.db.query<ID>(
+                      QueryBuilder.selectFrom("person")
+                        .select(["id"])
+                        .where("pk", "=", Number(form.person_pk))
+                        .limit(1)
+                        .compile(),
+                    )
+                  )[0];
+                  await navigate({
+                    to: "/app/home/$user_id",
+                    params: { user_id: row.id },
+                  });
                 })}
               >
                 {login_form.formState.isSubmitting ? "登录中..." : "登录"}
@@ -360,7 +361,7 @@ function Component() {
                         await context.db.execute(
                           QueryBuilder.deleteFrom("user")
                             .where(
-                              "pk",
+                              "person_pk",
                               "=",
                               Number(login_form.getValues("person_pk")),
                             )
@@ -392,7 +393,7 @@ function Component() {
                     (
                       await context.db.query(
                         QueryBuilder.selectFrom("person")
-                          .innerJoin("user", "user.pk", "person.pk")
+                          .innerJoin("user", "user.person_pk", "person.pk")
                           .select("person.pk")
                           .where("name", "=", form.user_name)
                           .limit(1)
@@ -405,6 +406,45 @@ function Component() {
                     });
                     return;
                   }
+                  let avatar =
+                    form.avatar_url &&
+                    (await (await fetch(form.avatar_url)).bytes());
+                  let avatar_file_pk: PK | undefined;
+                  if (avatar) {
+                    const avatar_hash = (await xxhash())
+                      .h64Raw(avatar)
+                      .toString(16);
+                    if (!(await context.fs.exists(`data/${avatar_hash}`))) {
+                      await context.fs.create_file(
+                        `data/${avatar_hash}`,
+                        avatar,
+                      );
+                    }
+                    const file_pk = (
+                      await context.db.query<PK>(
+                        QueryBuilder.insertInto("file")
+                          .values({
+                            hash: avatar_hash,
+                          })
+                          .onConflict((oc) => oc.column("hash").doNothing())
+                          .returning("pk")
+                          .compile(),
+                      )
+                    ).at(0);
+                    if (file_pk) {
+                      avatar_file_pk = file_pk;
+                    } else {
+                      avatar_file_pk = (
+                        await context.db.query<PK>(
+                          QueryBuilder.selectFrom("file")
+                            .select(["pk"])
+                            .where("hash", "=", avatar_hash)
+                            .limit(1)
+                            .compile(),
+                        )
+                      )[0];
+                    }
+                  }
                   const secret_key = await Endpoint.generate_secret_key();
                   const person_pk = (
                     await context.db.query<PK>(
@@ -412,9 +452,26 @@ function Component() {
                         .values({
                           id: await Endpoint.get_secret_key_id(secret_key),
                           name: form.user_name,
-                          avatar: form.avatar_url
-                            ? await (await fetch(form.avatar_url)).bytes()
-                            : null,
+                          avatar_file_pk: avatar_file_pk?.pk,
+                        })
+                        .returning("pk")
+                        .compile(),
+                    )
+                  )[0];
+                  const key_hash = (await xxhash())
+                    .h64Raw(secret_key)
+                    .toString(16);
+                  if (!(await context.fs.exists(`data/${key_hash}`))) {
+                    await context.fs.create_file(
+                      `data/${key_hash}`,
+                      secret_key,
+                    );
+                  }
+                  const key_file_pk = (
+                    await context.db.query<PK>(
+                      QueryBuilder.insertInto("file")
+                        .values({
+                          hash: key_hash,
                         })
                         .returning("pk")
                         .compile(),
@@ -423,8 +480,8 @@ function Component() {
                   await context.db.execute(
                     QueryBuilder.insertInto("user")
                       .values({
-                        pk: person_pk.pk,
-                        key: secret_key,
+                        person_pk: person_pk.pk,
+                        key_file_pk: key_file_pk.pk,
                       })
                       .compile(),
                   );

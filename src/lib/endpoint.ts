@@ -35,7 +35,7 @@ export class Endpoint {
       try {
         return await api.invoke<Uint8Array>("generate_secret_key");
       } catch (error) {
-        throw new Error(`${error}`);
+        throw new Error(undefined, { cause: error });
       }
     } else if (api.kind === "Web") {
       return api.generate_secret_key();
@@ -48,7 +48,7 @@ export class Endpoint {
       try {
         return await api.invoke<string>("get_secret_key_id", { secret_key });
       } catch (error) {
-        throw new Error(`${error}`);
+        throw new Error(undefined, { cause: error });
       }
     } else if (api.kind === "Web") {
       return api.get_secret_key_id(secret_key);
@@ -58,12 +58,32 @@ export class Endpoint {
   }
   async create(secret_key: Uint8Array, person: Person) {
     if (api.kind === "Native") {
-      throw new Error("未实现");
+      try {
+        await api.invoke("endpoint_create", {
+          secret_key,
+          person,
+        });
+      } catch (error) {
+        throw new Error(undefined, { cause: error });
+      }
     } else if (api.kind === "Web") {
       this.endpoint = await api.Endpoint.new(
         secret_key,
         api.Person.from_object(person),
       );
+    } else {
+      throw new Error("API缺失");
+    }
+  }
+  async is_create() {
+    if (api.kind === "Native") {
+      try {
+        return await api.invoke<boolean>("endpoint_is_create");
+      } catch (error) {
+        throw new Error(undefined, { cause: error });
+      }
+    } else if (api.kind === "Web") {
+      return this.endpoint ? true : false;
     } else {
       throw new Error("API缺失");
     }

@@ -5,5 +5,5 @@
 /target/
 /.tanstack/
 /.vscode/
-/stats.html
+/pkg_view.html
 /schema.db

@@ -1,24 +1,83 @@
 generator kysely {
-  provider = "prisma-kysely"
-  output   = "src"
-  fileName = "db_types.gen.ts"
+  provider="prisma-kysely"
+  output="src"
+  fileName="db_schema.gen.ts"
   bytesTypeOverride="Uint8Array"
 }
 
 datasource db {
-  provider = "sqlite"
-  url      = "file:schema.db"
+  provider="sqlite"
+  url="file:schema.db"
+}
+
+enum MessageType {
+  Ref
+  Text
+  File
+  Image
+  Audio
+  Video
+}
+
+model file {
+  pk Int @id @default(autoincrement())
+  hash String @unique
 }
 
 model person {
   pk Int @id @default(autoincrement())
   id String @unique
   name String
-  avatar Bytes?
-  bio String?
+  avatar_file_pk Int?
+  bio String @default("还没有自我介绍")
 }
 
 model user {
-  pk Int @id
-  key Bytes @unique
+  person_pk Int @unique
+  key_file_pk Int @unique
+}
+
+model friend {
+  person_pk Int @unique
+}
+
+model user_friend {
+  pk Int @id @default(autoincrement())
+  user_person_pk Int
+  friend_person_pk Int
+  @@unique([user_person_pk,friend_person_pk])
+}
+
+model message {
+  pk Int @id @default(autoincrement())
+  timestamp DateTime @default(now())
+  type MessageType @default(Text)
+  ref_message_pk Int?
+  text String?
+  file_pk Int?
+}
+
+model friend_message {
+  user_friend_pk Int
+  message_pk Int
+  @@unique([user_friend_pk,message_pk])
+}
+
+model group {
+  pk Int @id @default(autoincrement())
+  id String @unique
+}
+
+model user_group {
+  pk Int @id @default(autoincrement())
+  user_person_pk Int
+  group_pk Int
+  @@unique([user_person_pk,group_pk])
+}
+
+model group_message {
+  user_group_pk Int
+  sender_person_pk Int
+  message_pk Int
+  @@unique([user_group_pk,message_pk])
 }

@@ -1,4 +1,4 @@
-import type { DB } from "@/db_types.gen";
+import type { DB } from "@/db_schema.gen";
 import {
   DummyDriver,
   Kysely,

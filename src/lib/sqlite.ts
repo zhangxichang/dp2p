@@ -32,7 +32,7 @@ export class Sqlite {
       try {
         await api.invoke("sqlite_open", { path });
       } catch (error) {
-        throw new Error(`${error}`);
+        throw new Error(undefined, { cause: error });
       }
     } else if (api.kind === "Web") {
       if (!this.promiser) throw new Error("未初始化");
@@ -49,7 +49,7 @@ export class Sqlite {
           try {
             await api.invoke("sqlite_execute_batch", { sql: schema_sql });
           } catch (error) {
-            throw new Error(`${error}`);
+            throw new Error(undefined, { cause: error });
           }
         } else if (api.kind === "Web") {
           if (!this.promiser) throw new Error("未初始化");
@@ -67,7 +67,7 @@ export class Sqlite {
       try {
         return await api.invoke<boolean>("sqlite_is_open");
       } catch (error) {
-        throw new Error(`${error}`);
+        throw new Error(undefined, { cause: error });
       }
     } else if (api.kind === "Web") {
       return this.dbid ? true : false;
@@ -80,7 +80,7 @@ export class Sqlite {
       try {
         await api.invoke("sqlite_close");
       } catch (error) {
-        throw new Error(`${error}`);
+        throw new Error(undefined, { cause: error });
       }
     } else if (api.kind === "Web") {
       if (!this.promiser) throw new Error("未初始化");
@@ -93,74 +93,86 @@ export class Sqlite {
     }
   }
   async execute_batch(sql: string) {
-    if (api.kind === "Native") {
-      try {
-        await api.invoke("sqlite_execute_batch", { sql });
-      } catch (error) {
-        throw new Error(`${error}`);
+    try {
+      if (api.kind === "Native") {
+        try {
+          await api.invoke("sqlite_execute_batch", { sql });
+        } catch (error) {
+          throw new Error(undefined, { cause: error });
+        }
+      } else if (api.kind === "Web") {
+        if (!this.promiser) throw new Error("未初始化");
+        if (!this.dbid) throw new Error("没有打开数据库");
+        await this.promiser("exec", { dbId: this.dbid, sql });
+      } else {
+        throw new Error("API缺失");
       }
-    } else if (api.kind === "Web") {
-      if (!this.promiser) throw new Error("未初始化");
-      if (!this.dbid) throw new Error("没有打开数据库");
-      await this.promiser("exec", { dbId: this.dbid, sql });
-    } else {
-      throw new Error("API缺失");
+      this.on_executes.forEach((f) => f());
+    } catch (error) {
+      throw new Error(sql, { cause: error });
     }
-    this.on_executes.forEach((f) => f());
   }
   async execute(compiled_query: CompiledQuery) {
-    if (api.kind === "Native") {
-      try {
-        await api.invoke("sqlite_execute", {
+    try {
+      if (api.kind === "Native") {
+        try {
+          await api.invoke("sqlite_execute", {
+            sql: compiled_query.sql,
+            params: compiled_query.parameters,
+          });
+        } catch (error) {
+          throw new Error(undefined, { cause: error });
+        }
+      } else if (api.kind === "Web") {
+        if (!this.promiser) throw new Error("未初始化");
+        if (!this.dbid) throw new Error("没有打开数据库");
+        await this.promiser("exec", {
+          dbId: this.dbid,
           sql: compiled_query.sql,
-          params: compiled_query.parameters,
+          bind: compiled_query.parameters,
         });
-      } catch (error) {
-        throw new Error(`${error}`);
+      } else {
+        throw new Error("API缺失");
       }
-    } else if (api.kind === "Web") {
-      if (!this.promiser) throw new Error("未初始化");
-      if (!this.dbid) throw new Error("没有打开数据库");
-      await this.promiser("exec", {
-        dbId: this.dbid,
-        sql: compiled_query.sql,
-        bind: compiled_query.parameters,
-      });
-    } else {
-      throw new Error("API缺失");
+      this.on_executes.forEach((f) => f());
+    } catch (error) {
+      throw new Error(compiled_query.sql, { cause: error });
     }
-    this.on_executes.forEach((f) => f());
   }
   async query<T>(compiled_query: CompiledQuery) {
-    if (api.kind === "Native") {
-      try {
-        return await api.invoke<T[]>("sqlite_query", {
+    try {
+      if (api.kind === "Native") {
+        try {
+          return await api.invoke<T[]>("sqlite_query", {
+            sql: compiled_query.sql,
+            params: compiled_query.parameters,
+          });
+        } catch (error) {
+          throw new Error(undefined, { cause: error });
+        }
+      } else if (api.kind === "Web") {
+        if (!this.promiser) throw new Error("未初始化");
+        if (!this.dbid) throw new Error("没有打开数据库");
+        let result: T[] = [];
+        await this.promiser("exec", {
+          dbId: this.dbid,
           sql: compiled_query.sql,
-          params: compiled_query.parameters,
+          bind: compiled_query.parameters,
+          callback: (value) => {
+            if (!value.row) return;
+            let obj = {} as any;
+            for (let i = 0; i < value.columnNames.length; i++) {
+              obj[value.columnNames[i]] = value.row[i];
+            }
+            result.push(obj);
+          },
         });
-      } catch (error) {
-        throw new Error(`${error}`);
+        return result;
+      } else {
+        throw new Error("API缺失");
       }
-    } else if (api.kind === "Web") {
-      if (!this.promiser) throw new Error("未初始化");
-      if (!this.dbid) throw new Error("没有打开数据库");
-      let result: T[] = [];
-      await this.promiser("exec", {
-        dbId: this.dbid,
-        sql: compiled_query.sql,
-        bind: compiled_query.parameters,
-        callback: (value) => {
-          if (!value.row) return;
-          let obj = {} as any;
-          for (let i = 0; i < value.columnNames.length; i++) {
-            obj[value.columnNames[i]] = value.row[i];
-          }
-          result.push(obj);
-        },
-      });
-      return result;
-    } else {
-      throw new Error("API缺失");
+    } catch (error) {
+      throw new Error(compiled_query.sql, { cause: error });
     }
   }
   on_open(name: string, callback: () => void | Promise<void>) {

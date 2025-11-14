@@ -29,6 +29,8 @@ export default defineConfig({
     tanstackRouter({ target: "react", autoCodeSplitting: true }),
     react(),
     tailwindcss(),
-    visualizer(),
+    visualizer({
+      filename: "pkg_view.html",
+    }),
   ],
 });

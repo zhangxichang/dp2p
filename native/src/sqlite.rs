@@ -1,17 +1,111 @@
+use std::path::PathBuf;
+
 use parking_lot::Mutex;
-use rusqlite::params_from_iter;
+use rusqlite::{ToSql, params_from_iter, types::FromSql};
 
 use crate::{
     error::{Error, OptionExt},
     state::State,
 };
 
+enum SQLiteType {
+    Null,
+    Integer(i64),
+    Real(f64),
+    Text(String),
+    Blob(Vec<u8>),
+}
+impl TryFrom<serde_json::Value> for SQLiteType {
+    type Error = Error;
+
+    fn try_from(value: serde_json::Value) -> Result<Self, Self::Error> {
+        Ok(match value {
+            serde_json::Value::Null => Self::Null,
+            serde_json::Value::Bool(value) => Self::Integer(value as _),
+            serde_json::Value::Number(value) => {
+                if let Some(value) = value.as_i64() {
+                    Self::Integer(value)
+                } else if let Some(value) = value.as_f64() {
+                    Self::Real(value)
+                } else {
+                    return Err(Error::User {
+                        error: "无法转换的数值类型".to_string(),
+                    });
+                }
+            }
+            serde_json::Value::String(value) => Self::Text(value),
+            _ => {
+                return Err(Error::User {
+                    error: "目标不能为数组或者对象".to_string(),
+                });
+            }
+        })
+    }
+}
+impl TryFrom<SQLiteType> for serde_json::Value {
+    type Error = Error;
+
+    fn try_from(value: SQLiteType) -> Result<Self, Self::Error> {
+        Ok(match value {
+            SQLiteType::Null => Self::Null,
+            SQLiteType::Integer(value) => Self::Number(value.into()),
+            SQLiteType::Real(value) => {
+                if let Some(value) = serde_json::Number::from_f64(value) {
+                    Self::Number(value)
+                } else {
+                    return Err(Error::User {
+                        error: "无法转换的数值类型".to_string(),
+                    });
+                }
+            }
+            SQLiteType::Text(value) => Self::String(value),
+            SQLiteType::Blob(value) => Self::Array(
+                value
+                    .into_iter()
+                    .map(|value| serde_json::Value::Number(value.into()))
+                    .collect(),
+            ),
+        })
+    }
+}
+impl ToSql for SQLiteType {
+    fn to_sql(&self) -> rusqlite::Result<rusqlite::types::ToSqlOutput<'_>> {
+        match self {
+            SQLiteType::Null => Ok(rusqlite::types::ToSqlOutput::Owned(
+                rusqlite::types::Value::Null,
+            )),
+            SQLiteType::Integer(value) => Ok(rusqlite::types::ToSqlOutput::Owned((*value).into())),
+            SQLiteType::Real(value) => Ok(rusqlite::types::ToSqlOutput::Owned((*value).into())),
+            SQLiteType::Text(value) => {
+                Ok(rusqlite::types::ToSqlOutput::Owned(value.clone().into()))
+            }
+            SQLiteType::Blob(value) => {
+                Ok(rusqlite::types::ToSqlOutput::Owned(value.clone().into()))
+            }
+        }
+    }
+}
+impl FromSql for SQLiteType {
+    fn column_result(value: rusqlite::types::ValueRef<'_>) -> rusqlite::types::FromSqlResult<Self> {
+        match value {
+            rusqlite::types::ValueRef::Null => Ok(SQLiteType::Null),
+            rusqlite::types::ValueRef::Integer(value) => Ok(SQLiteType::Integer(value)),
+            rusqlite::types::ValueRef::Real(value) => Ok(SQLiteType::Real(value)),
+            rusqlite::types::ValueRef::Text(value) => Ok(SQLiteType::Text(
+                String::from_utf8(value.to_vec())
+                    .map_err(|_| rusqlite::types::FromSqlError::InvalidType)?,
+            )),
+            rusqlite::types::ValueRef::Blob(value) => Ok(SQLiteType::Blob(value.to_vec())),
+        }
+    }
+}
+
 #[derive(Default)]
 pub struct Sqlite {
     connection: Mutex<Option<rusqlite::Connection>>,
 }
 #[tauri::command(rename_all = "snake_case")]
-pub async fn sqlite_open(state: tauri::State<'_, State>, path: String) -> Result<(), Error> {
+pub async fn sqlite_open(state: tauri::State<'_, State>, path: PathBuf) -> Result<(), Error> {
     state
         .db
         .connection
@@ -44,12 +138,15 @@ pub async fn sqlite_execute(
     sql: String,
     params: Vec<serde_json::Value>,
 ) -> Result<(), Error> {
-    state
-        .db
-        .connection
-        .lock()
-        .get()?
-        .execute(&sql, params_from_iter(params))?;
+    state.db.connection.lock().get()?.execute(
+        &sql,
+        params_from_iter(
+            params
+                .into_iter()
+                .map(|value| value.try_into())
+                .collect::<Result<Vec<SQLiteType>, Error>>()?,
+        ),
+    )?;
     Ok(())
 }
 #[tauri::command(rename_all = "snake_case")]
@@ -62,12 +159,33 @@ pub async fn sqlite_query(
     let db = db.get()?;
     let mut statement = db.prepare(&sql)?;
     Ok(statement
-        .query_map(params_from_iter(params), |row| {
-            let mut object = serde_json::Map::new();
-            for (i, key) in row.as_ref().column_names().iter().enumerate() {
-                object.insert(key.to_string(), row.get(i)?);
-            }
-            Ok(serde_json::Value::Object(object))
-        })?
+        .query_map(
+            params_from_iter(
+                params
+                    .into_iter()
+                    .map(|value| value.try_into())
+                    .collect::<Result<Vec<SQLiteType>, Error>>()?,
+            ),
+            |row| {
+                let mut object = serde_json::Map::new();
+                for key in row.as_ref().column_names() {
+                    let index = row.as_ref().column_index(key)?;
+                    let data_type = row.get_ref(index)?.data_type();
+                    object.insert(
+                        key.to_string(),
+                        row.get::<_, SQLiteType>(index)?
+                            .try_into()
+                            .map_err(|err: Error| {
+                                rusqlite::Error::FromSqlConversionFailure(
+                                    index,
+                                    data_type,
+                                    err.into(),
+                                )
+                            })?,
+                    );
+                }
+                Ok(serde_json::Value::Object(object))
+            },
+        )?
         .collect::<Result<_, _>>()?)
 }

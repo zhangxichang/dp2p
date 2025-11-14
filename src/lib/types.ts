@@ -4,9 +4,18 @@ export interface PK {
 export interface ID {
   id: string;
 }
+export interface FileMetadata {
+  hash: string;
+}
 export interface Person {
   name: string;
   avatar?: Uint8Array;
-  bio?: string;
+  bio: string;
 }
-export type DOMPerson = Omit<Person, "avatar"> & { avatar_url?: string };
+
+export type PersonData = Omit<Person, "avatar"> & {
+  avatar_file_pk?: number;
+};
+export type DOMPerson = Omit<PersonData, "avatar_file_pk"> & {
+  avatar_url?: string;
+};

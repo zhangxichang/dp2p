@@ -59,6 +59,7 @@ import { open_url } from "@/lib/opener";
 import { FileSystem } from "@/lib/file_system";
 import { Sqlite } from "@/lib/sqlite";
 import { Errored } from "@/components/errored";
+import { Endpoint } from "@/lib/endpoint";
 
 let tauri_window: typeof import("@tauri-apps/api/window") | undefined;
 if (import.meta.env.TAURI_ENV_PLATFORM) {
@@ -70,6 +71,7 @@ const Store = createStore(
     {
       fs: new FileSystem(),
       db: new Sqlite(),
+      endpoint: new Endpoint(),
     },
     (set, get) => ({ set, get }),
   ),
@@ -90,9 +92,11 @@ export const Route = createFileRoute("/app")({
     if (!(await db.is_open())) {
       await db.open("data.db", true);
     }
+    store.get().endpoint.init();
     return {
       fs: store.get().fs,
       db: store.get().db,
+      endpoint: store.get().endpoint,
     };
   },
 });
@@ -264,6 +268,7 @@ function Component() {
                       await navigate({ to: "/app/login" });
                       await context.db.close();
                       await context.fs.remove_file("data.db");
+                      await context.fs.remove_dir_all("data");
                       await context.db.open("data.db", true);
                     }}
                   >
