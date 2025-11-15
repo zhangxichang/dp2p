@@ -48,11 +48,12 @@ import { blob_to_data_url } from "@/lib/blob_to_data_url";
 import { createStore } from "zustand";
 import { combine } from "zustand/middleware";
 import { Link } from "@tanstack/react-router";
-import type { DOMPerson } from "@/lib/types";
+import type { DOMPerson, FileMetadata, ID, PersonData, PK } from "@/lib/types";
 import { Connections } from "@/lib/connections";
 import { QueryBuilder } from "@/lib/query_builder";
 import type { Endpoint } from "@/lib/endpoint";
 import type { Sqlite } from "@/lib/sqlite";
+import { AppPath, FileSystem } from "@/lib/file_system";
 
 const Store = createStore(
   combine(
@@ -67,27 +68,75 @@ export const Route = createFileRoute("/app/home/$user_id")({
   pendingComponent: () => <Loading hint_text="正在初始化主界面" />,
   beforeLoad: async ({ context, params }) => {
     const store = Store.getState();
-    const user = (
-      await context.db.query<{ key: Uint8Array; person: DOMPerson }>(
+    const person_data = (
+      await context.db.query<{ key_file_pk: number } & PersonData & PK>(
         QueryBuilder.selectFrom("person")
-          .innerJoin("user", "user.pk", "person.pk")
-          .select(["key", "name", "avatar", "bio"])
+          .innerJoin("user", "user.person_pk", "person.pk")
+          .select(["key_file_pk", "pk", "name", "avatar_file_pk", "bio"])
+          .where("id", "=", params.user_id)
           .limit(1)
           .compile(),
       )
     )[0];
-    if (await context.endpoint.is_create()) {
-      await context.endpoint.create(user.key, user.person);
-      handle_friend_request(context.endpoint, context.db, params.user_id);
-      handle_chat_request(
-        context.endpoint,
+    let avatar: Uint8Array | undefined;
+    if (person_data.avatar_file_pk) {
+      avatar = await context.fs.read_file(
+        `${AppPath.DataDirectory}/${
+          (
+            await context.db.query<FileMetadata>(
+              QueryBuilder.selectFrom("file")
+                .select(["hash"])
+                .where("pk", "=", person_data.avatar_file_pk)
+                .limit(1)
+                .compile(),
+            )
+          )[0].hash
+        }`,
+      );
+    }
+    if (!(await context.endpoint.is_create())) {
+      await context.endpoint.create(
+        await context.fs.read_file(
+          `${AppPath.DataDirectory}/${
+            (
+              await context.db.query<FileMetadata>(
+                QueryBuilder.selectFrom("file")
+                  .select(["hash"])
+                  .where("pk", "=", person_data.key_file_pk)
+                  .limit(1)
+                  .compile(),
+              )
+            )[0].hash
+          }`,
+        ),
+        {
+          name: person_data.name,
+          avatar,
+          bio: person_data.bio,
+        },
+      );
+      handle_friend_request(
+        context.fs,
         context.db,
+        context.endpoint,
+        params.user_id,
+      );
+      handle_chat_request(
+        context.db,
+        context.endpoint,
         params.user_id,
         store.get().connections,
       );
     }
     return {
-      user: user.person,
+      user: {
+        pk: person_data.pk,
+        name: person_data.name,
+        avatar_url:
+          avatar &&
+          (await blob_to_data_url(new Blob([Uint8Array.from(avatar)]))),
+        bio: person_data.bio,
+      } satisfies DOMPerson & PK,
       connections: store.get().connections,
     };
   },
@@ -95,8 +144,10 @@ export const Route = createFileRoute("/app/home/$user_id")({
 function Component() {
   const context = Route.useRouteContext();
   const params = Route.useParams();
-  const [friends, set_friends] = useState<DOMPerson[]>([]);
-  const [search_user_result, set_search_user_result] = useState<DOMPerson>();
+  const [friends, set_friends] = useState<(DOMPerson & ID)[]>([]);
+  const [search_user_result, set_search_user_result] = useState<
+    DOMPerson & ID
+  >();
   const [
     send_friend_request_button_disabled,
     set_send_friend_request_button_disabled,
@@ -123,29 +174,69 @@ function Component() {
       user_id: "",
     },
   });
-  //实时同步数据库好友变化
+  //实时同步数据库好友
   useEffect(() => {
-    const query_fn = async () => {
+    const update = async () => {
       set_friends(
-        await context.db.query<DOMPerson>(
-          "SELECT pk,name,avatar,bio FROM person JOIN user ON pk=user.person_pk JOIN friend ON user.person_pk=friend.owner_person_pk",
-          {
-            map: async (value) => ({
-              pk: value.pk,
-              name: value.name,
-              avatar_url:
-                value.avatar &&
-                (await blob_to_data_url(
-                  new Blob([Uint8Array.from(value.avatar)]),
-                )),
-              bio: value.bio,
-            }),
-          },
+        await Promise.all(
+          (
+            await context.db.query<PersonData & ID>(
+              QueryBuilder.selectFrom("user")
+                .innerJoin("friend", "friend.user_person_pk", "user.person_pk")
+                .innerJoin(
+                  "person as user_person",
+                  "user_person.pk",
+                  "user.person_pk",
+                )
+                .innerJoin(
+                  "person as friend_person",
+                  "friend_person.pk",
+                  "friend.person_pk",
+                )
+                .select([
+                  "friend_person.id",
+                  "friend_person.name",
+                  "friend_person.avatar_file_pk",
+                  "friend_person.bio",
+                ])
+                .where("user_person.id", "=", params.user_id)
+                .compile(),
+            )
+          ).map(async (v) => {
+            let avatar_url: string | undefined;
+            if (v.avatar_file_pk) {
+              avatar_url = await blob_to_data_url(
+                new Blob([
+                  Uint8Array.from(
+                    await context.fs.read_file(
+                      `${AppPath.DataDirectory}/${
+                        (
+                          await context.db.query<FileMetadata>(
+                            QueryBuilder.selectFrom("file")
+                              .where("pk", "=", v.avatar_file_pk)
+                              .select(["hash"])
+                              .limit(1)
+                              .compile(),
+                          )
+                        )[0].hash
+                      }`,
+                    ),
+                  ),
+                ]),
+              );
+            }
+            return {
+              id: v.id,
+              name: v.name,
+              avatar_url,
+              bio: v.bio,
+            } satisfies DOMPerson & ID;
+          }),
         ),
       );
     };
-    query_fn();
-    context.db.on_change("friends", query_fn);
+    update();
+    context.db.on_execute("friends", update);
   }, []);
   return (
     <div className="flex-1 flex min-h-0">
@@ -190,40 +281,64 @@ function Component() {
                               e.preventDefault();
                               await search_user_form.handleSubmit(
                                 async (form) => {
-                                  try {
-                                    if (
-                                      (
-                                        await context.db.query(
-                                          `SELECT 0 FROM person WHERE id='${params.user_id}' AND user.id='${form.user_id}' LIMIT 1`,
-                                        )
-                                      ).length !== 0
-                                    ) {
-                                      throw "已经是你的好友了";
-                                    }
-                                    const person =
-                                      await context.endpoint.request_person(
-                                        form.user_id,
-                                      );
-                                    set_search_user_result({
-                                      id: form.user_id,
-                                      name: person.name,
-                                      avatar_url:
-                                        person.avatar &&
-                                        (await blob_to_data_url(
-                                          new Blob([
-                                            Uint8Array.from(person.avatar),
-                                          ]),
-                                        )),
-                                      bio: person.bio,
-                                    });
-                                    set_send_friend_request_button_disabled(
-                                      false,
-                                    );
-                                  } catch (error) {
+                                  if (
+                                    (
+                                      await context.db.query(
+                                        QueryBuilder.selectFrom("user")
+                                          .innerJoin(
+                                            "person as user_person",
+                                            "user_person.pk",
+                                            "user.person_pk",
+                                          )
+                                          .innerJoin(
+                                            "friend",
+                                            "friend.user_person_pk",
+                                            "user.person_pk",
+                                          )
+                                          .innerJoin(
+                                            "person as friend_person",
+                                            "friend_person.pk",
+                                            "friend.person_pk",
+                                          )
+                                          .select(["friend_person.pk"])
+                                          .where(
+                                            "user_person.id",
+                                            "=",
+                                            params.user_id,
+                                          )
+                                          .where(
+                                            "friend_person.id",
+                                            "=",
+                                            form.user_id,
+                                          )
+                                          .limit(1)
+                                          .compile(),
+                                      )
+                                    ).length !== 0
+                                  ) {
                                     search_user_form.setError("user_id", {
-                                      message: `${error}`,
+                                      message: "已经是你的好友了",
                                     });
                                   }
+                                  const person =
+                                    await context.endpoint.request_person(
+                                      form.user_id,
+                                    );
+                                  set_search_user_result({
+                                    id: form.user_id,
+                                    name: person.name,
+                                    avatar_url:
+                                      person.avatar &&
+                                      (await blob_to_data_url(
+                                        new Blob([
+                                          Uint8Array.from(person.avatar),
+                                        ]),
+                                      )),
+                                    bio: person.bio,
+                                  });
+                                  set_send_friend_request_button_disabled(
+                                    false,
+                                  );
                                 },
                               )();
                             }}
@@ -278,20 +393,99 @@ function Component() {
                                 },
                                 success: () => {
                                   (async () => {
+                                    let avatar_file_pk: PK | undefined;
+                                    if (search_user_result.avatar_url) {
+                                      let avatar = await (
+                                        await fetch(
+                                          search_user_result.avatar_url,
+                                        )
+                                      ).bytes();
+                                      const avatar_hash = Array.from(
+                                        new Uint8Array(
+                                          await crypto.subtle.digest(
+                                            "SHA-256",
+                                            avatar,
+                                          ),
+                                        ),
+                                      )
+                                        .map((byte) =>
+                                          byte.toString(16).padStart(2, "0"),
+                                        )
+                                        .join("");
+                                      if (
+                                        !(await context.fs.exists(
+                                          `${AppPath.DataDirectory}/${avatar_hash}`,
+                                        ))
+                                      ) {
+                                        await context.fs.create_file(
+                                          `${AppPath.DataDirectory}/${avatar_hash}`,
+                                          avatar,
+                                        );
+                                      }
+                                      const file_pk = (
+                                        await context.db.query<PK>(
+                                          QueryBuilder.insertInto("file")
+                                            .values({
+                                              hash: avatar_hash,
+                                            })
+                                            .onConflict((oc) =>
+                                              oc.column("hash").doNothing(),
+                                            )
+                                            .returning("pk")
+                                            .compile(),
+                                        )
+                                      ).at(0);
+                                      if (file_pk) {
+                                        avatar_file_pk = file_pk;
+                                      } else {
+                                        avatar_file_pk = (
+                                          await context.db.query<PK>(
+                                            QueryBuilder.selectFrom("file")
+                                              .select(["pk"])
+                                              .where("hash", "=", avatar_hash)
+                                              .limit(1)
+                                              .compile(),
+                                          )
+                                        )[0];
+                                      }
+                                    }
+                                    const person_pk = (
+                                      await context.db.query<PK>(
+                                        QueryBuilder.insertInto("person")
+                                          .values({
+                                            id: search_user_result.id,
+                                            name: search_user_result.name,
+                                            avatar_file_pk: avatar_file_pk?.pk,
+                                          })
+                                          .returning("pk")
+                                          .compile(),
+                                      )
+                                    )[0];
+                                    const user_person_pk = (
+                                      await context.db.query<PK>(
+                                        QueryBuilder.selectFrom("user")
+                                          .innerJoin(
+                                            "person",
+                                            "person.pk",
+                                            "person_pk",
+                                          )
+                                          .select(["person_pk"])
+                                          .where(
+                                            "person.id",
+                                            "=",
+                                            params.user_id,
+                                          )
+                                          .limit(1)
+                                          .compile(),
+                                      )
+                                    )[0];
                                     await context.db.execute(
-                                      `INSERT INTO friends\
-                                      VALUES('${params.user_id}','${search_user_result.id}','${search_user_result.name}',?,'${search_user_result.bio}')`,
-                                      {
-                                        bind: [
-                                          search_user_result.avatar_url
-                                            ? await (
-                                                await fetch(
-                                                  search_user_result.avatar_url,
-                                                )
-                                              ).bytes()
-                                            : null,
-                                        ],
-                                      },
+                                      QueryBuilder.insertInto("friend")
+                                        .values({
+                                          person_pk: person_pk.pk,
+                                          user_person_pk: user_person_pk.pk,
+                                        })
+                                        .compile(),
                                     );
                                   })();
                                   return "对方同意好友请求";
@@ -354,13 +548,13 @@ function Component() {
                 <a>
                   <ItemMedia>
                     <Avatar className="size-10">
-                      <AvatarImage src={user.at(0)?.avatar_url} />
-                      <AvatarFallback>{user.at(0)?.name.at(0)}</AvatarFallback>
+                      <AvatarImage src={context.user.avatar_url} />
+                      <AvatarFallback>{context.user.name.at(0)}</AvatarFallback>
                     </Avatar>
                   </ItemMedia>
                   <ItemContent>
-                    <ItemTitle>{user.at(0)?.name}</ItemTitle>
-                    <ItemDescription>{user.at(0)?.bio}</ItemDescription>
+                    <ItemTitle>{context.user.name}</ItemTitle>
+                    <ItemDescription>{context.user.bio}</ItemDescription>
                   </ItemContent>
                 </a>
               </Item>
@@ -382,8 +576,9 @@ function Component() {
 }
 
 async function handle_friend_request(
+  fs: FileSystem,
+  db: Sqlite,
   endpoint: Endpoint,
-  db: Database,
   user_id: string,
 ) {
   while (true) {
@@ -418,12 +613,82 @@ async function handle_friend_request(
                 size="icon-sm"
                 onClick={async () => {
                   const friend_id = friend_request.remote_id();
+                  let avatar_file_pk: PK | undefined;
+                  if (friend_info.avatar) {
+                    const avatar_hash = Array.from(
+                      new Uint8Array(
+                        await crypto.subtle.digest(
+                          "SHA-256",
+                          Uint8Array.from(friend_info.avatar),
+                        ),
+                      ),
+                    )
+                      .map((byte) => byte.toString(16).padStart(2, "0"))
+                      .join("");
+                    if (
+                      !(await fs.exists(
+                        `${AppPath.DataDirectory}/${avatar_hash}`,
+                      ))
+                    ) {
+                      await fs.create_file(
+                        `${AppPath.DataDirectory}/${avatar_hash}`,
+                        friend_info.avatar,
+                      );
+                    }
+                    const file_pk = (
+                      await db.query<PK>(
+                        QueryBuilder.insertInto("file")
+                          .values({
+                            hash: avatar_hash,
+                          })
+                          .onConflict((oc) => oc.column("hash").doNothing())
+                          .returning("pk")
+                          .compile(),
+                      )
+                    ).at(0);
+                    if (file_pk) {
+                      avatar_file_pk = file_pk;
+                    } else {
+                      avatar_file_pk = (
+                        await db.query<PK>(
+                          QueryBuilder.selectFrom("file")
+                            .select(["pk"])
+                            .where("hash", "=", avatar_hash)
+                            .limit(1)
+                            .compile(),
+                        )
+                      )[0];
+                    }
+                  }
+                  const person_pk = (
+                    await db.query<PK>(
+                      QueryBuilder.insertInto("person")
+                        .values({
+                          id: friend_id,
+                          name: friend_info.name,
+                          avatar_file_pk: avatar_file_pk?.pk,
+                        })
+                        .returning("pk")
+                        .compile(),
+                    )
+                  )[0];
+                  const user_person_pk = (
+                    await db.query<PK>(
+                      QueryBuilder.selectFrom("user")
+                        .innerJoin("person", "person.pk", "person_pk")
+                        .select(["person_pk"])
+                        .where("person.id", "=", user_id)
+                        .limit(1)
+                        .compile(),
+                    )
+                  )[0];
                   await db.execute(
-                    `INSERT INTO friends\
-                    VALUES('${user_id}','${friend_id}','${friend_info.name}',?,'${friend_info.bio}')`,
-                    {
-                      bind: [friend_info.avatar],
-                    },
+                    QueryBuilder.insertInto("friend")
+                      .values({
+                        person_pk: person_pk.pk,
+                        user_person_pk: user_person_pk.pk,
+                      })
+                      .compile(),
                   );
                   friend_request.accept();
                   toast.dismiss(toast_id);
@@ -458,8 +723,8 @@ async function handle_friend_request(
 }
 
 async function handle_chat_request(
-  endpoint: Endpoint,
   db: Sqlite,
+  endpoint: Endpoint,
   user_id: string,
   connections: Connections,
 ) {
@@ -468,18 +733,28 @@ async function handle_chat_request(
     if (!chat_request) break;
     (async () => {
       const friend_id = chat_request.remote_id();
-      if (
-        (
-          await db.query(
-            QueryBuilder.selectFrom("person")
-              .innerJoin("friend", "friend.pk", "person.pk")
-              .select("person.pk")
-              .where("id", "=", friend_id)
-              .limit(1)
-              .compile(),
-          )
-        ).length === 0
-      ) {
+      const friend_person_pk = (
+        await db.query<PK>(
+          QueryBuilder.selectFrom("user")
+            .innerJoin(
+              "person as user_person",
+              "user_person.pk",
+              "user.person_pk",
+            )
+            .innerJoin("friend", "friend.user_person_pk", "user.person_pk")
+            .innerJoin(
+              "person as friend_person",
+              "friend_person.pk",
+              "friend.person_pk",
+            )
+            .select(["friend_person.pk"])
+            .where("user_person.id", "=", user_id)
+            .where("friend_person.id", "=", friend_id)
+            .limit(1)
+            .compile(),
+        )
+      ).at(0);
+      if (!friend_person_pk) {
         chat_request.reject();
       } else {
         const connection = chat_request.accept();
@@ -489,9 +764,23 @@ async function handle_chat_request(
           if (!connection) break;
           const message = await connection.read();
           if (!message) break;
+          const message_pk = (
+            await db.query<PK>(
+              QueryBuilder.insertInto("message")
+                .values({
+                  text: message,
+                })
+                .returning("pk")
+                .compile(),
+            )
+          )[0];
           await db.execute(
-            `INSERT INTO chat_records(owner,sender,receiver,content)\
-            VALUES('${user_id}','${friend_id}','${user_id}','${message}')`,
+            QueryBuilder.insertInto("friend_message")
+              .values({
+                friend_person_pk: friend_person_pk.pk,
+                message_pk: message_pk.pk,
+              })
+              .compile(),
           );
         }
         connections.delete(friend_id);

@@ -38,29 +38,24 @@ model user {
 }
 
 model friend {
-  person_pk Int @unique
-}
-
-model user_friend {
-  pk Int @id @default(autoincrement())
+  person_pk Int
   user_person_pk Int
-  friend_person_pk Int
-  @@unique([user_person_pk,friend_person_pk])
+  @@unique([person_pk,user_person_pk])
 }
 
 model message {
   pk Int @id @default(autoincrement())
   timestamp DateTime @default(now())
   type MessageType @default(Text)
-  ref_message_pk Int?
+  ref_pk Int?
   text String?
   file_pk Int?
 }
 
 model friend_message {
-  user_friend_pk Int
+  friend_person_pk Int
   message_pk Int
-  @@unique([user_friend_pk,message_pk])
+  @@unique([friend_person_pk,message_pk])
 }
 
 model group {

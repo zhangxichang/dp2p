@@ -11,6 +11,13 @@ if (!import.meta.env.TAURI_ENV_PLATFORM) {
   api = { kind: "Web", ...(await import("opfs-worker")) };
 }
 
+export const AppPath = {
+  DatabaseFile: "data.db",
+  ConfigFile: "config.toml",
+  DataDirectory: "data",
+  CacheDirectory: "cache",
+} as const;
+
 export class FileSystem {
   private opfs?: OPFSFileSystem;
 

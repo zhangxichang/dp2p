@@ -51,7 +51,7 @@ import { QueryBuilder } from "@/lib/query_builder";
 import { Errored } from "@/components/errored";
 import { Endpoint } from "@/lib/endpoint";
 import type { DOMPerson, FileMetadata, ID, PersonData, PK } from "@/lib/types";
-import xxhash from "xxhash-wasm";
+import { AppPath } from "@/lib/file_system";
 
 export const Route = createFileRoute("/app/login")({
   component: Component,
@@ -95,9 +95,9 @@ function Component() {
       user_name: "",
     },
   });
-  //实时同步数据库用户变化
+  //实时同步数据库用户
   useEffect(() => {
-    const update_users = async () => {
+    const update = async () => {
       set_users(
         await Promise.all(
           (
@@ -119,7 +119,7 @@ function Component() {
                 new Blob([
                   Uint8Array.from(
                     await context.fs.read_file(
-                      `data/${
+                      `${AppPath.DataDirectory}/${
                         (
                           await context.db.query<FileMetadata>(
                             QueryBuilder.selectFrom("file")
@@ -145,11 +145,11 @@ function Component() {
         ),
       );
     };
-    update_users();
-    context.db.on_execute("login_users", update_users);
+    update();
+    context.db.on_execute("login_users", update);
     context.db.on_open("login_users", () => {
       login_form.reset();
-      update_users();
+      update();
     });
   }, []);
   return (
@@ -406,17 +406,23 @@ function Component() {
                     });
                     return;
                   }
-                  let avatar =
-                    form.avatar_url &&
-                    (await (await fetch(form.avatar_url)).bytes());
                   let avatar_file_pk: PK | undefined;
-                  if (avatar) {
-                    const avatar_hash = (await xxhash())
-                      .h64Raw(avatar)
-                      .toString(16);
-                    if (!(await context.fs.exists(`data/${avatar_hash}`))) {
+                  if (form.avatar_url) {
+                    let avatar = await (await fetch(form.avatar_url)).bytes();
+                    const avatar_hash = Array.from(
+                      new Uint8Array(
+                        await crypto.subtle.digest("SHA-256", avatar),
+                      ),
+                    )
+                      .map((byte) => byte.toString(16).padStart(2, "0"))
+                      .join("");
+                    if (
+                      !(await context.fs.exists(
+                        `${AppPath.DataDirectory}/${avatar_hash}`,
+                      ))
+                    ) {
                       await context.fs.create_file(
-                        `data/${avatar_hash}`,
+                        `${AppPath.DataDirectory}/${avatar_hash}`,
                         avatar,
                       );
                     }
@@ -458,12 +464,23 @@ function Component() {
                         .compile(),
                     )
                   )[0];
-                  const key_hash = (await xxhash())
-                    .h64Raw(secret_key)
-                    .toString(16);
-                  if (!(await context.fs.exists(`data/${key_hash}`))) {
+                  const key_hash = Array.from(
+                    new Uint8Array(
+                      await crypto.subtle.digest(
+                        "SHA-256",
+                        Uint8Array.from(secret_key),
+                      ),
+                    ),
+                  )
+                    .map((byte) => byte.toString(16).padStart(2, "0"))
+                    .join("");
+                  if (
+                    !(await context.fs.exists(
+                      `${AppPath.DataDirectory}/${key_hash}`,
+                    ))
+                  ) {
                     await context.fs.create_file(
-                      `data/${key_hash}`,
+                      `${AppPath.DataDirectory}/${key_hash}`,
                       secret_key,
                     );
                   }

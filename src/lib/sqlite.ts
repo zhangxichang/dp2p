@@ -13,12 +13,14 @@ if (!import.meta.env.TAURI_ENV_PLATFORM) {
 }
 
 export class Sqlite {
+  private schema_sql?: string;
   private promiser?: Promiser;
   private dbid?: DbId;
   private on_opens = new Map<string, () => void | Promise<void>>();
   private on_executes = new Map<string, () => void | Promise<void>>();
 
   async init() {
+    this.schema_sql = await (await fetch("/schema.sql")).text();
     if (api.kind === "Native") {
     } else if (api.kind === "Web") {
       if (this.promiser) return;
@@ -42,19 +44,21 @@ export class Sqlite {
     } else {
       throw new Error("API缺失");
     }
-    if (is_init) {
-      const schema_sql = await (await fetch("/schema.sql")).text();
+    if (is_init && this.schema_sql) {
       try {
         if (api.kind === "Native") {
           try {
-            await api.invoke("sqlite_execute_batch", { sql: schema_sql });
+            await api.invoke("sqlite_execute_batch", { sql: this.schema_sql });
           } catch (error) {
             throw new Error(undefined, { cause: error });
           }
         } else if (api.kind === "Web") {
           if (!this.promiser) throw new Error("未初始化");
           if (!this.dbid) throw new Error("没有打开数据库");
-          await this.promiser("exec", { dbId: this.dbid, sql: schema_sql });
+          await this.promiser("exec", {
+            dbId: this.dbid,
+            sql: this.schema_sql,
+          });
         } else {
           throw new Error("API缺失");
         }

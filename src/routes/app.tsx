@@ -56,7 +56,7 @@ import { createStore } from "zustand";
 import { combine } from "zustand/middleware";
 import { Octokit } from "octokit";
 import { open_url } from "@/lib/opener";
-import { FileSystem } from "@/lib/file_system";
+import { AppPath, FileSystem } from "@/lib/file_system";
 import { Sqlite } from "@/lib/sqlite";
 import { Errored } from "@/components/errored";
 import { Endpoint } from "@/lib/endpoint";
@@ -90,7 +90,7 @@ export const Route = createFileRoute("/app")({
     const db = store.get().db;
     await db.init();
     if (!(await db.is_open())) {
-      await db.open("data.db", true);
+      await db.open(AppPath.DatabaseFile, true);
     }
     store.get().endpoint.init();
     return {
@@ -267,9 +267,9 @@ function Component() {
                     onClick={async () => {
                       await navigate({ to: "/app/login" });
                       await context.db.close();
-                      await context.fs.remove_file("data.db");
-                      await context.fs.remove_dir_all("data");
-                      await context.db.open("data.db", true);
+                      await context.fs.remove_file(AppPath.DatabaseFile);
+                      await context.fs.remove_dir_all(AppPath.DataDirectory);
+                      await context.db.open(AppPath.DatabaseFile, true);
                     }}
                   >
                     确定

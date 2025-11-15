@@ -3,10 +3,32 @@ import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
 import { Button } from "@/components/ui/button";
 import { Form, FormControl, FormField, FormItem } from "@/components/ui/form";
 import { blob_to_data_url } from "@/lib/blob_to_data_url";
+import { AppPath } from "@/lib/file_system";
+import { QueryBuilder } from "@/lib/query_builder";
+import type {
+  DOMPerson,
+  FileMetadata,
+  FriendMessage,
+  ID,
+  PersonData,
+  PK,
+  Text,
+} from "@/lib/types";
 import { zodResolver } from "@hookform/resolvers/zod";
-import type { Connection, ConnectionType } from "@starlink/endpoint";
+import { ConnectionType, type Connection } from "@starlink/endpoint";
 import { createFileRoute } from "@tanstack/react-router";
 import { useVirtualizer } from "@tanstack/react-virtual";
+import {
+  Radio,
+  RadioTower,
+  Signal,
+  SignalHigh,
+  SignalLow,
+  SignalMedium,
+  SignalZero,
+  Waypoints,
+  WifiOff,
+} from "lucide-react";
 import { useEffect, useMemo, useRef, useState } from "react";
 import { useForm } from "react-hook-form";
 import Textarea from "react-textarea-autosize";
@@ -16,34 +38,104 @@ export const Route = createFileRoute("/app/home/$user_id/chat/$friend_id")({
   component: Component,
   pendingComponent: () => <Loading hint_text="正在初始化聊天栏" />,
   beforeLoad: async ({ context, params }) => {
-    if (!context.chat_connections.get(params.friend_id)) {
+    const friend_person_pk = (
+      await context.db.query<PK>(
+        QueryBuilder.selectFrom("user")
+          .innerJoin(
+            "person as user_person",
+            "user_person.pk",
+            "user.person_pk",
+          )
+          .innerJoin("friend", "friend.user_person_pk", "user.person_pk")
+          .innerJoin(
+            "person as friend_person",
+            "friend_person.pk",
+            "friend.person_pk",
+          )
+          .select(["friend_person.pk"])
+          .where("user_person.id", "=", params.user_id)
+          .where("friend_person.id", "=", params.friend_id)
+          .limit(1)
+          .compile(),
+      )
+    )[0];
+    if (!context.connections.get(params.friend_id)) {
       (async () => {
         const connection = await context.endpoint.request_chat(
           params.friend_id,
         );
         if (!connection) return;
-        context.chat_connections.set(params.friend_id, connection);
+        context.connections.set(params.friend_id, connection);
         while (true) {
-          const connection = context.chat_connections.get(params.friend_id);
+          const connection = context.connections.get(params.friend_id);
           if (!connection) break;
           const message = await connection.read();
           if (!message) break;
+          const message_pk = (
+            await context.db.query<PK>(
+              QueryBuilder.insertInto("message")
+                .values({
+                  text: message,
+                })
+                .returning("pk")
+                .compile(),
+            )
+          )[0];
           await context.db.execute(
-            `INSERT INTO chat_records(owner,sender,receiver,content)\
-            VALUES('${params.user_id}','${params.friend_id}','${params.user_id}','${message}')`,
+            QueryBuilder.insertInto("friend_message")
+              .values({
+                friend_person_pk: friend_person_pk.pk,
+                message_pk: message_pk.pk,
+              })
+              .compile(),
           );
         }
-        context.chat_connections.delete(params.friend_id);
+        context.connections.delete(params.friend_id);
       })();
     }
+    const person_data = (
+      await context.db.query<{ key_file_pk: number } & PersonData>(
+        QueryBuilder.selectFrom("person")
+          .innerJoin("user", "user.person_pk", "person.pk")
+          .select(["name", "avatar_file_pk", "bio"])
+          .where("id", "=", params.user_id)
+          .limit(1)
+          .compile(),
+      )
+    )[0];
+    let avatar: Uint8Array | undefined;
+    if (person_data.avatar_file_pk) {
+      avatar = await context.fs.read_file(
+        `${AppPath.DataDirectory}/${
+          (
+            await context.db.query<FileMetadata>(
+              QueryBuilder.selectFrom("file")
+                .select(["hash"])
+                .where("pk", "=", person_data.avatar_file_pk)
+                .limit(1)
+                .compile(),
+            )
+          )[0].hash
+        }`,
+      );
+    }
+    return {
+      friend: {
+        pk: friend_person_pk.pk,
+        name: person_data.name,
+        avatar_url:
+          avatar &&
+          (await blob_to_data_url(new Blob([Uint8Array.from(avatar)]))),
+        bio: person_data.bio,
+      } satisfies DOMPerson & PK,
+    };
   },
 });
 function Component() {
   const context = Route.useRouteContext();
   const params = Route.useParams();
-  const [friend, set_friend] = useState<DOMUser[]>([]);
   const [connection, set_connection] = useState<Connection | undefined>(
-    context.chat_connections.get(params.friend_id),
+    context.connections.get(params.friend_id),
   );
   const [connection_type, set_connection_type] = useState<
     ConnectionType | undefined
@@ -51,15 +143,15 @@ function Component() {
   const [connection_latency, set_connection_latency] = useState<
     number | undefined
   >(context.endpoint.latency(params.friend_id));
-  const [chat_messages, set_chat_messages] = useState<ChatMessage[]>([]);
+  const [messages, set_messages] = useState<FriendMessage[]>([]);
   //聊天消息列表;
-  const chat_message_list_ref = useRef(null);
-  const chat_message_virtualizer = useVirtualizer({
-    getScrollElement: () => chat_message_list_ref.current,
-    count: chat_messages.length,
+  const message_list_ref = useRef(null);
+  const message_virtualizer = useVirtualizer({
+    getScrollElement: () => message_list_ref.current,
+    count: messages.length,
     estimateSize: () => 60,
   });
-  const chat_message_items = chat_message_virtualizer.getVirtualItems();
+  const message_items = message_virtualizer.getVirtualItems();
   //发送消息表单规则
   const send_message_form_schema = useMemo(
     () =>
@@ -75,27 +167,9 @@ function Component() {
       message: "",
     },
   });
-  //实时同步数据库好友信息
-  useEffect(() => {
-    context.db.live_query<DOMUser>(
-      "friend",
-      set_friend,
-      `SELECT name,avatar,bio FROM friends WHERE id='${params.friend_id}' LIMIT 1`,
-      {
-        map: async (value) => ({
-          id: value.id,
-          name: value.name,
-          avatar_url:
-            value.avatar &&
-            (await blob_to_data_url(new Blob([Uint8Array.from(value.avatar)]))),
-          bio: value.bio,
-        }),
-      },
-    );
-  }, []);
   //监听连接状态变化
   useEffect(() => {
-    context.chat_connections.on_change(params.friend_id, (connection) => {
+    context.connections.on_change(params.friend_id, (connection) => {
       set_connection(connection);
     });
     const update_connection_type_task = setInterval(
@@ -112,58 +186,78 @@ function Component() {
       clearInterval(update_connection_latency_task);
     };
   }, []);
-  //实时同步数据库聊天记录
+  //实时同步数据库好友消息
   useEffect(() => {
-    context.db.live_query<ChatMessage>(
-      "chat_messages",
-      set_chat_messages,
-      `SELECT sender,receiver,content FROM chat_records WHERE owner='${params.user_id}'`,
-      {
-        map: async (value) => ({
-          sender: value.sender,
-          receiver: value.name,
-          content: value.content,
-          timestamp: value.bio,
-        }),
-      },
-    );
+    const update = async () => {
+      set_messages(
+        await Promise.all(
+          (
+            await context.db.query<Text & ID>(
+              QueryBuilder.selectFrom("message")
+                .innerJoin(
+                  "friend_message",
+                  "friend_message.message_pk",
+                  "message.pk",
+                )
+                .innerJoin(
+                  "friend",
+                  "friend.person_pk",
+                  "friend_message.friend_person_pk",
+                )
+                .innerJoin("user", "user.person_pk", "friend.user_person_pk")
+                .innerJoin("person", "person.pk", "user.person_pk")
+                .innerJoin("person", "person.pk", "friend.person_pk")
+                .select(["id", "text"])
+                .where("id", "=", params.user_id)
+                .where("id", "=", params.friend_id)
+                .compile(),
+            )
+          ).map(async (v) => {
+            return {
+              is_sent: false,
+              text: v.text,
+            } satisfies FriendMessage;
+          }),
+        ),
+      );
+    };
+    update();
+    context.db.on_execute("friend_messages", update);
   }, []);
   //自动滚动到最新消息
   useEffect(() => {
     if (
-      chat_message_virtualizer.getVirtualIndexes().at(-1) ===
-      chat_messages.length - 1
+      message_virtualizer.getVirtualIndexes().at(-1) ===
+      messages.length - 1
     ) {
-      chat_message_virtualizer.scrollToIndex(Infinity);
+      message_virtualizer.scrollToIndex(Infinity);
     }
-  }, [chat_messages.length]);
+  }, [messages.length]);
   //每次渲染时自动获取聊天输入框焦点
   useEffect(() => send_message_form.setFocus("message"));
   return (
     <div className="flex-1 flex flex-col min-h-0">
       <div className="flex items-center px-2 py-1 gap-1 border-b">
         <Avatar>
-          <AvatarImage src={friend.at(0)?.avatar_url} />
+          <AvatarImage src={context.friend.avatar_url} />
           <AvatarFallback className="select-none">
-            {friend.at(0)?.name.at(0)}
+            {context.friend.name.at(0)}
           </AvatarFallback>
         </Avatar>
         <Button variant={"link"} className="p-0 font-bold">
-          {friend.at(0)?.name}
+          {context.friend.name}
         </Button>
         <div className="flex gap-1">
-          {/*{!connection && <WifiOff className="size-5 text-red-700" />}
-          {connection_type &&
-            connection_type !== "None" &&
-            (() => {
-              if (connection_type === "Direct") {
-                return <Radio className="size-5 text-green-700" />;
-              } else if (connection_type === "Relay") {
-                return <RadioTower className="size-5 text-yellow-600" />;
-              } else if (connection_type === "Mixed") {
-                return <Waypoints className="size-5 text-blue-500" />;
-              }
-            })()}
+          {!connection && <WifiOff className="size-5 text-red-700" />}
+          {(() => {
+            if (connection_type === ConnectionType.Direct) {
+              return <Radio className="size-5 text-green-700" />;
+            } else if (connection_type === ConnectionType.Relay) {
+              return <RadioTower className="size-5 text-yellow-600" />;
+            } else if (connection_type === ConnectionType.Mixed) {
+              return <Waypoints className="size-5 text-blue-500" />;
+            }
+          })()}
           {connection_latency &&
             (() => {
               if (connection_latency < 100) {
@@ -177,25 +271,25 @@ function Component() {
               } else if (connection_latency < 1600) {
                 return <SignalZero className="size-5 text-red-700" />;
               }
-            })()}*/}
+            })()}
         </div>
       </div>
       <div className="flex-1 flex flex-col p-2 min-h-0 gap-1">
-        <div ref={chat_message_list_ref} className="flex-1 overflow-y-auto">
+        <div ref={message_list_ref} className="flex-1 overflow-y-auto">
           <div
             className="w-full relative"
-            style={{ height: chat_message_virtualizer.getTotalSize() }}
+            style={{ height: message_virtualizer.getTotalSize() }}
           >
             <div
               className="absolute top-0 left-0 w-full"
               style={{
-                transform: `translateY(${chat_message_items.at(0)?.start}px)`,
+                transform: `translateY(${message_items.at(0)?.start}px)`,
               }}
             >
-              {chat_messages &&
-                chat_message_items.map((value) => (
+              {messages &&
+                message_items.map((value) => (
                   <div
-                    ref={chat_message_virtualizer.measureElement}
+                    ref={message_virtualizer.measureElement}
                     key={value.key}
                     data-index={value.index}
                     className="flex gap-1"
@@ -203,21 +297,17 @@ function Component() {
                     <Avatar className="size-10">
                       <AvatarImage
                         src={
-                          (chat_messages[value.index].sender ===
-                            params.user_id &&
+                          (messages[value.index].is_sent &&
                             context.user.avatar_url) ||
-                          (chat_messages[value.index].sender ===
-                            params.friend_id &&
+                          (messages[value.index].is_sent &&
                             context.friend.avatar_url) ||
                           undefined
                         }
                       />
                       <AvatarFallback className="select-none">
-                        {(chat_messages[value.index].sender ===
-                          params.user_id &&
+                        {(messages[value.index].is_sent &&
                           context.user.name.at(0)) ||
-                          (chat_messages[value.index].sender ===
-                            params.friend_id &&
+                          (messages[value.index].is_sent &&
                             context.friend.name.at(0))}
                       </AvatarFallback>
                     </Avatar>
@@ -226,14 +316,11 @@ function Component() {
                         variant={"link"}
                         className="p-0 font-bold text-base"
                       >
-                        {(chat_messages[value.index].sender ===
-                          params.user_id &&
-                          context.user.name) ||
-                          (chat_messages[value.index].sender ===
-                            params.friend_id &&
+                        {(messages[value.index].is_sent && context.user.name) ||
+                          (messages[value.index].is_sent &&
                             context.friend.name)}
                       </Button>
-                      <span>{chat_messages[value.index].message}</span>
+                      <span>{messages[value.index].text}</span>
                     </div>
                   </div>
                 ))}
@@ -260,14 +347,23 @@ function Component() {
                       e.preventDefault();
                       await send_message_form.handleSubmit(async (form) => {
                         await connection!.send(form.message);
-                        const chat_record_id = (
-                          await context.db.query<number>(
-                            `INSERT OR IGNORE INTO chat_records(message) VALUES('${form.message}') RETURNING chat_record_id`,
+                        const message_pk = (
+                          await context.db.query<PK>(
+                            QueryBuilder.insertInto("message")
+                              .values({
+                                text: form.message,
+                              })
+                              .returning("pk")
+                              .compile(),
                           )
                         )[0];
                         await context.db.execute(
-                          `INSERT OR IGNORE INTO chat_record_index(user_id,chat_id,chat_record_id) \
-                          VALUES('${params.user_id}','${params.friend_id}',${chat_record_id})`,
+                          QueryBuilder.insertInto("friend_message")
+                            .values({
+                              friend_person_pk: context.friend.pk,
+                              message_pk: message_pk.pk,
+                            })
+                            .compile(),
                         );
                         send_message_form.reset();
                       })();
