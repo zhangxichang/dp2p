@@ -1,34 +1,26 @@
 import type { SQLiteUpdateEvent } from "@/lib/sqlite";
+import Worker from "@/worker/sqlite?worker";
 
 export type Command =
   | {
-      kind: "open";
-      return: MessagePort;
-      path: string;
-    }
-  | {
       kind: "close";
       return: MessagePort;
-      db: number;
     }
   | {
       kind: "execute";
       return: MessagePort;
-      db: number;
       sql: string;
       params?: any[];
     }
   | {
       kind: "query";
       return: MessagePort;
-      db: number;
       sql: string;
       params?: any[];
     }
   | {
       kind: "on_update";
       return: MessagePort;
-      db: number;
     };
 
 export type Result<T> =
@@ -41,40 +33,30 @@ export type Result<T> =
       error: Error;
     };
 
-export class SQLiteAPI {
-  private command: MessagePort;
+export class SQLiteConnection {
+  private worker: Worker;
 
-  constructor(command: MessagePort) {
-    this.command = command;
+  private constructor(worker: Worker) {
+    this.worker = worker;
   }
-  async open(path: string) {
-    return await new Promise<number>((resolve, reject) => {
-      const { port1, port2 } = new MessageChannel();
-      this.command.postMessage(
-        {
-          kind: "open",
-          return: port2,
-          path,
-        } satisfies Command,
-        { transfer: [port2] },
-      );
-      port1.onmessage = (e: MessageEvent<Result<number>>) => {
-        if (e.data.kind === "ok") {
-          resolve(e.data.value);
-        } else {
-          reject(e.data.error);
-        }
-      };
-    });
+  static async new(path: string) {
+    return new SQLiteConnection(
+      await new Promise<Worker>((resolve) => {
+        const worker = new Worker();
+        worker.onmessage = () => {
+          worker.postMessage(path);
+          worker.onmessage = () => resolve(worker);
+        };
+      }),
+    );
   }
-  async close(db: number) {
+  async close() {
     await new Promise((resolve, reject) => {
       const { port1, port2 } = new MessageChannel();
-      this.command.postMessage(
+      this.worker.postMessage(
         {
           kind: "close",
           return: port2,
-          db,
         } satisfies Command,
         { transfer: [port2] },
       );
@@ -86,15 +68,15 @@ export class SQLiteAPI {
         }
       };
     });
+    this.worker.terminate();
   }
-  async execute(db: number, sql: string, params?: any[]) {
+  async execute(sql: string, params?: any[]) {
     await new Promise((resolve, reject) => {
       const { port1, port2 } = new MessageChannel();
-      this.command.postMessage(
+      this.worker.postMessage(
         {
           kind: "execute",
           return: port2,
-          db,
           sql,
           params,
         } satisfies Command,
@@ -109,14 +91,13 @@ export class SQLiteAPI {
       };
     });
   }
-  async query<T>(db: number, sql: string, params?: any[]) {
+  async query<T>(sql: string, params?: any[]) {
     return await new Promise<ReadableStream<T>>((resolve, reject) => {
       const { port1, port2 } = new MessageChannel();
-      this.command.postMessage(
+      this.worker.postMessage(
         {
           kind: "query",
           return: port2,
-          db,
           sql,
           params,
         } satisfies Command,
@@ -131,16 +112,12 @@ export class SQLiteAPI {
       };
     });
   }
-  on_update(
-    db: number,
-    callback: (event: SQLiteUpdateEvent) => void | Promise<void>,
-  ) {
+  on_update(callback: (event: SQLiteUpdateEvent) => void | Promise<void>) {
     const { port1, port2 } = new MessageChannel();
-    this.command.postMessage(
+    this.worker.postMessage(
       {
         kind: "on_update",
         return: port2,
-        db,
       } satisfies Command,
       { transfer: [port2] },
     );

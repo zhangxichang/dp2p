@@ -42,7 +42,12 @@ import {
   MenubarTrigger,
 } from "@/components/ui/menubar";
 import { Toaster } from "@/components/ui/sonner";
-import { createFileRoute, Outlet, useNavigate } from "@tanstack/react-router";
+import {
+  createFileRoute,
+  Outlet,
+  useNavigate,
+  useRouter,
+} from "@tanstack/react-router";
 import {
   ExternalLink,
   Info,
@@ -80,19 +85,19 @@ export const Route = createFileRoute("/app")({
     return <Loading hint_text="我现在正在初始化这个程序" mode="screen" />;
   },
   errorComponent: () => {
-    return <Errored hint_text="我的天呀，应用程序初始化错误了" mode="screen" />;
+    return <Errored hint_text="我的天呀，应用程序运行出错了" mode="screen" />;
   },
   beforeLoad: async () => {
     AppStore.getState().fs.init();
-    const db = AppStore.getState().db;
-    await db.init();
-    if (!(await db.is_open())) {
-      await db.open(AppPath.DatabaseFile, true);
+    await AppStore.getState().db.init();
+    if (!(await AppStore.getState().db.is_open())) {
+      await AppStore.getState().db.open(AppPath.DatabaseFile, true);
     }
-    AppStore.getState().endpoint.init();
+    await AppStore.getState().endpoint.init();
   },
 });
 function Component() {
+  const router = useRouter();
   const navigate = useNavigate();
   const [is_maximized, set_is_maximized] = useState<boolean>();
   const [about_dialog_opened, set_about_dialog_opened] = useState(false);
@@ -256,13 +261,12 @@ function Component() {
                   <AlertDialogCancel>取消</AlertDialogCancel>
                   <AlertDialogAction
                     onClick={async () => {
-                      await navigate({ to: "/app/login" });
                       await AppStore.getState().db.close();
-                      await AppStore.getState().fs.remove_dir_all("");
-                      await AppStore.getState().db.open(
+                      await AppStore.getState().fs.remove_file(
                         AppPath.DatabaseFile,
-                        true,
                       );
+                      router.clearCache();
+                      await navigate({ to: "/app/login" });
                       for (const callback of AppStore.getState().on_resets) {
                         await callback();
                       }

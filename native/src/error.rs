@@ -1,7 +1,11 @@
 pub trait OptionExt<T> {
+    fn out(self) -> Result<T, Error>;
     fn get(&self) -> Result<&T, Error>;
 }
 impl<T> OptionExt<T> for Option<T> {
+    fn out(self) -> Result<T, Error> {
+        self.ok_or("空值".to_string().into())
+    }
     fn get(&self) -> Result<&T, Error> {
         self.as_ref().ok_or("空值".to_string().into())
     }

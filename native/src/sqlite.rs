@@ -36,9 +36,15 @@ impl TryFrom<serde_json::Value> for SQLiteType {
                 }
             }
             serde_json::Value::String(value) => Self::Text(value),
-            _ => {
+            serde_json::Value::Array(array) => Self::Blob(
+                array
+                    .into_iter()
+                    .map(|v| Ok(v.as_u64().out()? as _))
+                    .collect::<Result<Vec<u8>, Error>>()?,
+            ),
+            serde_json::Value::Object(_) => {
                 return Err(Error::User {
-                    error: "目标不能为数组或者对象".to_string(),
+                    error: "目标不能为对象".to_string(),
                 });
             }
         })

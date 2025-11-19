@@ -1,9 +1,9 @@
-import type { SQLiteAPI } from "@/worker/sqlite-api";
+import { SQLiteConnection } from "@/worker/sqlite-api";
 import type { UnlistenFn } from "@tauri-apps/api/event";
 import type { CompiledQuery } from "kysely";
 
 type Native = { kind: "Native" } & typeof import("@tauri-apps/api/core");
-type Web = { kind: "Web" } & typeof import("@/worker/sqlite.ts?worker");
+type Web = { kind: "Web" } & typeof import("@/worker/sqlite-api");
 
 let api: Native | Web;
 let event: typeof import("@tauri-apps/api/event");
@@ -11,10 +11,8 @@ if (import.meta.env.TAURI_ENV_PLATFORM) {
   api = { kind: "Native", ...(await import("@tauri-apps/api/core")) };
   event = await import("@tauri-apps/api/event");
 }
-let sqlite_api: typeof import("@/worker/sqlite-api");
 if (!import.meta.env.TAURI_ENV_PLATFORM) {
-  api = { kind: "Web", ...(await import("@/worker/sqlite?worker")) };
-  sqlite_api = await import("@/worker/sqlite-api");
+  api = { kind: "Web", ...(await import("@/worker/sqlite-api")) };
 }
 
 export interface SQLiteUpdateEvent {
@@ -25,28 +23,14 @@ export interface SQLiteUpdateEvent {
 }
 
 export class Sqlite {
-  private sqlite_api?: SQLiteAPI;
-  private db?: number;
-  private un_listen_on_update?: UnlistenFn;
   private schema_sql?: string;
+  private connection?: SQLiteConnection;
+  private un_listen_on_update?: UnlistenFn;
   private on_updates = new Array<
     (event: SQLiteUpdateEvent) => void | Promise<void>
   >();
 
   async init() {
-    if (api.kind === "Native") {
-    } else if (api.kind === "Web") {
-      if (this.sqlite_api) return;
-      this.sqlite_api = await new Promise<SQLiteAPI>((resolve) => {
-        const worker = new api.default();
-        worker.onmessage = (e) => {
-          resolve(new sqlite_api.SQLiteAPI(e.data));
-          worker.onmessage = null;
-        };
-      });
-    } else {
-      throw new Error("API缺失");
-    }
     if (this.schema_sql) return;
     this.schema_sql = await (await fetch("/schema.sql")).text();
   }
@@ -55,7 +39,7 @@ export class Sqlite {
       try {
         await api.invoke("sqlite_open", { path });
         await api.invoke("sqlite_on_update");
-        this.unon_update = await event.listen<SQLiteUpdateEvent>(
+        this.un_listen_on_update = await event.listen<SQLiteUpdateEvent>(
           "on_update",
           async (e) => {
             for (const callback of this.on_updates) {
@@ -67,14 +51,13 @@ export class Sqlite {
         throw new Error(undefined, { cause: error });
       }
     } else if (api.kind === "Web") {
-      if (!this.sqlite_api) throw new Error("未初始化");
-      const db = await this.sqlite_api.open(path);
-      this.sqlite_api.on_update(db, async (e) => {
+      const connection = await SQLiteConnection.new(path);
+      connection.on_update(async (e) => {
         for (const callback of this.on_updates) {
           await callback(e);
         }
       });
-      this.db = db;
+      this.connection = connection;
     } else {
       throw new Error("API缺失");
     }
@@ -87,9 +70,8 @@ export class Sqlite {
             throw new Error(undefined, { cause: error });
           }
         } else if (api.kind === "Web") {
-          if (!this.sqlite_api) throw new Error("未初始化");
-          if (!this.db) throw new Error("没有打开数据库");
-          await this.sqlite_api.execute(this.db, this.schema_sql);
+          if (!this.connection) throw new Error("没有连接数据库");
+          await this.connection.execute(this.schema_sql);
         } else {
           throw new Error("API缺失");
         }
@@ -104,7 +86,7 @@ export class Sqlite {
         throw new Error(undefined, { cause: error });
       }
     } else if (api.kind === "Web") {
-      return this.db ? true : false;
+      return this.connection ? true : false;
     } else {
       throw new Error("API缺失");
     }
@@ -118,11 +100,10 @@ export class Sqlite {
         throw new Error(undefined, { cause: error });
       }
     } else if (api.kind === "Web") {
-      if (!this.sqlite_api) throw new Error("未初始化");
-      if (!this.db) return;
-      let db = this.db;
-      this.db = undefined;
-      await this.sqlite_api.close(db);
+      if (!this.connection) throw new Error("没有连接数据库");
+      const connection = this.connection;
+      this.connection = undefined;
+      await connection.close();
     } else {
       throw new Error("API缺失");
     }
@@ -139,10 +120,8 @@ export class Sqlite {
           throw new Error(undefined, { cause: error });
         }
       } else if (api.kind === "Web") {
-        if (!this.sqlite_api) throw new Error("未初始化");
-        if (!this.db) throw new Error("没有打开数据库");
-        await this.sqlite_api.execute(
-          this.db,
+        if (!this.connection) throw new Error("没有连接数据库");
+        await this.connection.execute(
           compiled_query.sql,
           compiled_query.parameters as any,
         );
@@ -165,11 +144,9 @@ export class Sqlite {
           throw new Error(undefined, { cause: error });
         }
       } else if (api.kind === "Web") {
-        if (!this.sqlite_api) throw new Error("未初始化");
-        if (!this.db) throw new Error("没有打开数据库");
+        if (!this.connection) throw new Error("没有连接数据库");
         let result: T[] = [];
-        for await (const value of await this.sqlite_api.query<T>(
-          this.db,
+        for await (const value of await this.connection.query<T>(
           compiled_query.sql,
           compiled_query.parameters as any,
         )) {

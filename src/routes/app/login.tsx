@@ -112,10 +112,10 @@ function Component() {
       }
     };
     AppStore.getState().db.on_update(on_update);
-    AppStore.getState().on_resets.push(() => {
+    AppStore.getState().on_resets.push(async () => {
       set_login_user_avatar(undefined);
       login_form.reset();
-      update();
+      await update();
     });
     return () => {
       AppStore.getState().db.unon_update(on_update);

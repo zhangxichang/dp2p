@@ -2,44 +2,44 @@ import wasm_url from "wa-sqlite/dist/wa-sqlite.wasm?url";
 import sqlite_esm_factory from "wa-sqlite/dist/wa-sqlite.mjs";
 import * as sqlite from "wa-sqlite";
 //@ts-expect-error
-import { OPFSCoopSyncVFS } from "wa-sqlite/src/examples/OPFSCoopSyncVFS";
+import { OPFSCoopSyncVFS as VFS } from "wa-sqlite/src/examples/OPFSCoopSyncVFS";
 import { err, ok, type Command } from "./sqlite-api";
 import type { SQLiteUpdateEvent } from "@/lib/sqlite";
 
 (async () => {
   const module = await sqlite_esm_factory({ locateFile: () => wasm_url });
   const sqlite_api = sqlite.Factory(module);
-  sqlite_api.vfs_register(
-    await OPFSCoopSyncVFS.create("opfs_coop_sync", module),
-  );
-  const { port1, port2 } = new MessageChannel();
-  postMessage(port2, { transfer: [port2] });
-  port1.onmessage = async (e: MessageEvent<Command>) => {
+  const vfs = await VFS.create("opfs", module);
+  sqlite_api.vfs_register(vfs);
+  const db = await new Promise<number>((resolve) => {
+    onmessage = async (e: MessageEvent<string>) => {
+      resolve(
+        await sqlite_api.open_v2(
+          e.data,
+          sqlite.SQLITE_OPEN_CREATE | sqlite.SQLITE_OPEN_READWRITE,
+          "opfs",
+        ),
+      );
+    };
+    postMessage(null);
+  });
+  onmessage = async (e: MessageEvent<Command>) => {
     try {
-      if (e.data.kind === "open") {
-        e.data.return.postMessage(
-          ok(
-            await sqlite_api.open_v2(e.data.path, undefined, "opfs_coop_sync"),
-          ),
-        );
-      } else if (e.data.kind === "close") {
-        await sqlite_api.close(e.data.db);
+      if (e.data.kind === "close") {
+        await sqlite_api.close(db);
         e.data.return.postMessage(ok(null));
       } else if (e.data.kind === "execute") {
-        for await (const stmt of sqlite_api.statements(e.data.db, e.data.sql)) {
+        for await (const stmt of sqlite_api.statements(db, e.data.sql)) {
           if (e.data.params) sqlite_api.bind_collection(stmt, e.data.params);
           await sqlite_api.step(stmt);
         }
         e.data.return.postMessage(ok(null));
       } else if (e.data.kind === "query") {
-        const args = { db: e.data.db, sql: e.data.sql, params: e.data.params };
+        const args = { sql: e.data.sql, params: e.data.params };
         const readable_stream = new ReadableStream({
           start: async (controller) => {
             try {
-              for await (const stmt of sqlite_api.statements(
-                args.db,
-                args.sql,
-              )) {
+              for await (const stmt of sqlite_api.statements(db, args.sql)) {
                 if (args.params) sqlite_api.bind_collection(stmt, args.params);
                 while ((await sqlite_api.step(stmt)) === sqlite.SQLITE_ROW) {
                   const object: Record<string, any> = {};
@@ -61,7 +61,7 @@ import type { SQLiteUpdateEvent } from "@/lib/sqlite";
         });
       } else if (e.data.kind === "on_update") {
         sqlite_api.update_hook(
-          e.data.db,
+          db,
           (update_type, db_name, table_name, row_id) => {
             e.data.return.postMessage({
               update_type,
@@ -78,4 +78,5 @@ import type { SQLiteUpdateEvent } from "@/lib/sqlite";
       );
     }
   };
+  postMessage(null);
 })();
