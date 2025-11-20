@@ -73,9 +73,7 @@ import type { SQLiteUpdateEvent } from "@/lib/sqlite";
         );
       }
     } catch (error) {
-      e.data.return.postMessage(
-        err(new Error("命令执行失败", { cause: error })),
-      );
+      e.data.return.postMessage(err(new Error(`命令执行失败:${error}`)));
     }
   };
   postMessage(null);

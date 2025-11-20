@@ -48,7 +48,7 @@ export class Sqlite {
           },
         );
       } catch (error) {
-        throw new Error(undefined, { cause: error });
+        throw new Error(`${error}`);
       }
     } else if (api.kind === "Web") {
       const connection = await SQLiteConnection.new(path);
@@ -62,20 +62,22 @@ export class Sqlite {
       throw new Error("API缺失");
     }
     if (is_init && this.schema_sql) {
-      try {
-        if (api.kind === "Native") {
-          try {
-            await api.invoke("sqlite_execute_batch", { sql: this.schema_sql });
-          } catch (error) {
-            throw new Error(undefined, { cause: error });
-          }
-        } else if (api.kind === "Web") {
-          if (!this.connection) throw new Error("没有连接数据库");
-          await this.connection.execute(this.schema_sql);
-        } else {
-          throw new Error("API缺失");
+      if (api.kind === "Native") {
+        try {
+          await api.invoke("sqlite_execute_batch", { sql: this.schema_sql });
+        } catch (error) {
+          throw new Error(`初始化数据库出错:${error}\n${this.schema_sql}`);
         }
-      } catch {}
+      } else if (api.kind === "Web") {
+        if (!this.connection) throw new Error("没有连接数据库");
+        try {
+          await this.connection.execute(this.schema_sql);
+        } catch (error) {
+          throw new Error(`初始化数据库出错:${error}\n${this.schema_sql}`);
+        }
+      } else {
+        throw new Error("API缺失");
+      }
     }
   }
   async is_open() {
@@ -83,7 +85,7 @@ export class Sqlite {
       try {
         return await api.invoke<boolean>("sqlite_is_open");
       } catch (error) {
-        throw new Error(undefined, { cause: error });
+        throw new Error(`${error}`);
       }
     } else if (api.kind === "Web") {
       return this.connection ? true : false;
@@ -97,7 +99,7 @@ export class Sqlite {
         await api.invoke("sqlite_close");
         this.un_listen_on_update?.();
       } catch (error) {
-        throw new Error(undefined, { cause: error });
+        throw new Error(`${error}`);
       }
     } else if (api.kind === "Web") {
       if (!this.connection) throw new Error("没有连接数据库");
@@ -117,7 +119,7 @@ export class Sqlite {
             params: compiled_query.parameters,
           });
         } catch (error) {
-          throw new Error(undefined, { cause: error });
+          throw new Error(`${error}`);
         }
       } else if (api.kind === "Web") {
         if (!this.connection) throw new Error("没有连接数据库");
@@ -129,7 +131,7 @@ export class Sqlite {
         throw new Error("API缺失");
       }
     } catch (error) {
-      throw new Error(compiled_query.sql, { cause: error });
+      throw new Error(`查询错误:${error}\n${compiled_query.sql}`);
     }
   }
   async query<T>(compiled_query: CompiledQuery) {
@@ -141,7 +143,7 @@ export class Sqlite {
             params: compiled_query.parameters,
           });
         } catch (error) {
-          throw new Error(undefined, { cause: error });
+          throw new Error(`${error}`);
         }
       } else if (api.kind === "Web") {
         if (!this.connection) throw new Error("没有连接数据库");
@@ -157,7 +159,7 @@ export class Sqlite {
         throw new Error("API缺失");
       }
     } catch (error) {
-      throw new Error(compiled_query.sql, { cause: error });
+      throw new Error(`查询错误:${error}\n${compiled_query.sql}`);
     }
   }
   on_update(callback: (event: SQLiteUpdateEvent) => void | Promise<void>) {

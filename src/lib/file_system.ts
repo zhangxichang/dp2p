@@ -32,7 +32,7 @@ export class FileSystem {
       try {
         await api.invoke("fs_remove_file", { path });
       } catch (error) {
-        throw new Error(undefined, { cause: error });
+        throw new Error(`${error}`);
       }
     } else if (api.kind === "Web") {
       if (!this.opfs) throw new Error("未初始化");
@@ -46,7 +46,7 @@ export class FileSystem {
       try {
         return await api.invoke<Uint8Array>("fs_read_file", { path });
       } catch (error) {
-        throw new Error(undefined, { cause: error });
+        throw new Error(`${error}`);
       }
     } else if (api.kind === "Web") {
       if (!this.opfs) throw new Error("未初始化");
@@ -60,7 +60,7 @@ export class FileSystem {
       try {
         await api.invoke("fs_create_file", { path, bytes });
       } catch (error) {
-        throw new Error(undefined, { cause: error });
+        throw new Error(`${error}`);
       }
     } else if (api.kind === "Web") {
       if (!this.opfs) throw new Error("未初始化");
@@ -74,7 +74,7 @@ export class FileSystem {
       try {
         return await api.invoke<boolean>("fs_exists", { path });
       } catch (error) {
-        throw new Error(undefined, { cause: error });
+        throw new Error(`${error}`);
       }
     } else if (api.kind === "Web") {
       if (!this.opfs) throw new Error("未初始化");
@@ -89,7 +89,7 @@ export class FileSystem {
         try {
           await api.invoke("fs_remove_dir_all", { path });
         } catch (error) {
-          throw new Error(undefined, { cause: error });
+          throw new Error(`${error}`);
         }
       } else if (api.kind === "Web") {
         if (!this.opfs) throw new Error("未初始化");

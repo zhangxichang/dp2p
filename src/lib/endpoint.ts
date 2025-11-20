@@ -35,7 +35,7 @@ export class Endpoint {
       try {
         return await api.invoke<Uint8Array>("generate_secret_key");
       } catch (error) {
-        throw new Error(undefined, { cause: error });
+        throw new Error(`${error}`);
       }
     } else if (api.kind === "Web") {
       return api.generate_secret_key();
@@ -48,7 +48,7 @@ export class Endpoint {
       try {
         return await api.invoke<string>("get_secret_key_id", { secret_key });
       } catch (error) {
-        throw new Error(undefined, { cause: error });
+        throw new Error(`${error}`);
       }
     } else if (api.kind === "Web") {
       return api.get_secret_key_id(secret_key);
@@ -64,7 +64,7 @@ export class Endpoint {
           person,
         });
       } catch (error) {
-        throw new Error(undefined, { cause: error });
+        throw new Error(`${error}`);
       }
     } else if (api.kind === "Web") {
       this.endpoint = await api.Endpoint.new(
@@ -80,7 +80,7 @@ export class Endpoint {
       try {
         return await api.invoke<boolean>("endpoint_is_create");
       } catch (error) {
-        throw new Error(undefined, { cause: error });
+        throw new Error(`${error}`);
       }
     } else if (api.kind === "Web") {
       return this.endpoint ? true : false;

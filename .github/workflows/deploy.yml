@@ -13,7 +13,6 @@ jobs:
       - uses: oven-sh/setup-bun@v2
         with:
           bun-version: latest
-      - uses: ryohidaka/action-setup-sqlite@v1.2.0
       #执行流程
       - name: 安装wasm32-unknown-unknown
         run: rustup target install wasm32-unknown-unknown
@@ -45,7 +44,6 @@ jobs:
       - uses: oven-sh/setup-bun@v2
         with:
           bun-version: latest
-      - uses: ryohidaka/action-setup-sqlite@v1.2.0
       #执行流程
       - name: 安装wasm32-unknown-unknown
         run: rustup target install wasm32-unknown-unknown

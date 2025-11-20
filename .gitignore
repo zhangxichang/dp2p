@@ -4,6 +4,4 @@
 /dist/
 /target/
 /.tanstack/
-/.vscode/
 /pkg_view.html
-/schema.db
