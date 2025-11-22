@@ -7,6 +7,7 @@ edition = "2024"
 eyre = "0.6.12"
 n0-error = "0.1.2"
 iroh = "0.95.1"
+iroh-blobs = { version = "0.97.0", default-features = false }
 rkyv = "0.8.12"
 tokio = { version = "1.48.0", default-features = false, features = [
     "parking_lot",

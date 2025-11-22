@@ -1,11 +1,11 @@
 import type { OPFSFileSystem } from "opfs-worker";
 
-type Native = { kind: "Native" } & typeof import("@tauri-apps/api/core");
+type Native = { kind: "Native" } & typeof import("@/lib/invoke");
 type Web = { kind: "Web" } & typeof import("opfs-worker");
 
 let api: Native | Web;
 if (import.meta.env.TAURI_ENV_PLATFORM) {
-  api = { kind: "Native", ...(await import("@tauri-apps/api/core")) };
+  api = { kind: "Native", ...(await import("@/lib/invoke")) };
 }
 if (!import.meta.env.TAURI_ENV_PLATFORM) {
   api = { kind: "Web", ...(await import("opfs-worker")) };
@@ -29,11 +29,7 @@ export class FileSystem {
   }
   async remove_file(path: string) {
     if (api.kind === "Native") {
-      try {
-        await api.invoke("fs_remove_file", { path });
-      } catch (error) {
-        throw new Error(`${error}`);
-      }
+      await api.fs_remove_file(path);
     } else if (api.kind === "Web") {
       if (!this.opfs) throw new Error("未初始化");
       await this.opfs.remove(path);
@@ -43,11 +39,7 @@ export class FileSystem {
   }
   async read_file(path: string) {
     if (api.kind === "Native") {
-      try {
-        return await api.invoke<Uint8Array>("fs_read_file", { path });
-      } catch (error) {
-        throw new Error(`${error}`);
-      }
+      return await api.fs_read_file(path);
     } else if (api.kind === "Web") {
       if (!this.opfs) throw new Error("未初始化");
       return await this.opfs.readFile(path, "binary");
@@ -57,11 +49,7 @@ export class FileSystem {
   }
   async create_file(path: string, bytes: Uint8Array) {
     if (api.kind === "Native") {
-      try {
-        await api.invoke("fs_create_file", { path, bytes });
-      } catch (error) {
-        throw new Error(`${error}`);
-      }
+      await api.fs_create_file(path, bytes);
     } else if (api.kind === "Web") {
       if (!this.opfs) throw new Error("未初始化");
       await this.opfs.writeFile(path, bytes);
@@ -71,11 +59,7 @@ export class FileSystem {
   }
   async exists(path: string) {
     if (api.kind === "Native") {
-      try {
-        return await api.invoke<boolean>("fs_exists", { path });
-      } catch (error) {
-        throw new Error(`${error}`);
-      }
+      return await api.fs_exists(path);
     } else if (api.kind === "Web") {
       if (!this.opfs) throw new Error("未初始化");
       return await this.opfs.exists(path);
@@ -86,11 +70,7 @@ export class FileSystem {
   async remove_dir_all(path: string) {
     if (await this.exists(path)) {
       if (api.kind === "Native") {
-        try {
-          await api.invoke("fs_remove_dir_all", { path });
-        } catch (error) {
-          throw new Error(`${error}`);
-        }
+        await api.fs_remove_dir_all(path);
       } else if (api.kind === "Web") {
         if (!this.opfs) throw new Error("未初始化");
         await this.opfs.remove(path, { recursive: true });

@@ -15,6 +15,29 @@ fn start() {
 }
 
 #[wasm_bindgen]
+pub struct Event(service::Event);
+#[wasm_bindgen]
+impl Event {
+    pub fn kind(&self) -> String {
+        self.0.kind()
+    }
+    pub fn as_friend_request(self) -> Result<FriendRequest, JsError> {
+        if let service::Event::FriendRequest(value) = self.0 {
+            Ok(FriendRequest(value))
+        } else {
+            Err(JsError::new("事件类型错误"))
+        }
+    }
+    pub fn as_chat_request(self) -> Result<ChatRequest, JsError> {
+        if let service::Event::ChatRequest(value) = self.0 {
+            Ok(ChatRequest(value))
+        } else {
+            Err(JsError::new("事件类型错误"))
+        }
+    }
+}
+
+#[wasm_bindgen]
 pub struct Person(service::Person);
 #[wasm_bindgen]
 impl Person {
@@ -81,25 +104,17 @@ impl Connection {
 #[wasm_bindgen]
 pub struct Endpoint {
     endpoint: endpoint::Endpoint,
-    friend_request_receiver: Mutex<mpsc::UnboundedReceiver<service::FriendRequest>>,
-    chat_request_receiver: Mutex<mpsc::UnboundedReceiver<service::ChatRequest>>,
+    event_receiver: Mutex<mpsc::UnboundedReceiver<service::Event>>,
 }
 #[wasm_bindgen]
 impl Endpoint {
     pub async fn new(secret_key: Vec<u8>, person: Person) -> Result<Self, JsError> {
-        let (friend_request_sender, friend_request_receiver) = mpsc::unbounded_channel();
-        let (chat_request_sender, chat_request_receiver) = mpsc::unbounded_channel();
+        let (event_sender, event_receiver) = mpsc::unbounded_channel();
         Ok(Self {
-            endpoint: endpoint::Endpoint::new(
-                secret_key,
-                person.0,
-                friend_request_sender,
-                chat_request_sender,
-            )
-            .await
-            .m()?,
-            friend_request_receiver: Mutex::new(friend_request_receiver),
-            chat_request_receiver: Mutex::new(chat_request_receiver),
+            endpoint: endpoint::Endpoint::new(secret_key, person.0, event_sender)
+                .await
+                .m()?,
+            event_receiver: Mutex::new(event_receiver),
         })
     }
     pub fn id(&self) -> String {
@@ -119,21 +134,13 @@ impl Endpoint {
             .m()?
             .map(|v| Connection(v)))
     }
-    pub async fn friend_request_next(&self) -> Option<FriendRequest> {
-        self.friend_request_receiver
+    pub async fn event_next(&self) -> Option<Event> {
+        self.event_receiver
             .lock()
             .await
             .recv()
             .await
-            .map(|v| FriendRequest(v))
-    }
-    pub async fn chat_request_next(&self) -> Option<ChatRequest> {
-        self.chat_request_receiver
-            .lock()
-            .await
-            .recv()
-            .await
-            .map(|v| ChatRequest(v))
+            .map(|v| Event(v))
     }
     pub fn connection_type(&self, id: String) -> Result<Option<String>, JsError> {
         Ok(self.endpoint.connection_type(id.parse()?).map(|value| {

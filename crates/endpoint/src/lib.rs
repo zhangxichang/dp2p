@@ -8,37 +8,36 @@ use iroh::{
     endpoint::{Connection, ConnectionType},
     protocol::Router,
 };
+use iroh_blobs::{BlobsProtocol, store::mem::MemStore};
 use tokio::sync::mpsc;
 
-use crate::service::{ChatRequest, FriendRequest, Person, SERVICE_ALPN, Service};
+use crate::service::{Event, Person, SERVICE_ALPN, Service};
 
 #[derive(Clone)]
 pub struct Endpoint {
     router: Router,
     service: Service,
+    _blobs: BlobsProtocol,
 }
 impl Endpoint {
     pub async fn new(
         secret_key: Vec<u8>,
         person: Person,
-        friend_request_sender: mpsc::UnboundedSender<FriendRequest>,
-        chat_request_sender: mpsc::UnboundedSender<ChatRequest>,
+        event_sender: mpsc::UnboundedSender<Event>,
     ) -> Result<Self> {
         let endpoint = iroh::Endpoint::builder()
             .secret_key(SecretKey::from_bytes(secret_key.as_slice().try_into()?))
             .bind()
             .await?;
-        let service = Service::new(
-            endpoint.clone(),
-            person,
-            friend_request_sender,
-            chat_request_sender,
-        );
+        let service = Service::new(endpoint.clone(), person, event_sender);
+        let blobs = BlobsProtocol::new(&MemStore::new(), None);
         Ok(Self {
             router: Router::builder(endpoint)
                 .accept(SERVICE_ALPN, service.clone())
+                .accept(iroh_blobs::ALPN, blobs.clone())
                 .spawn(),
             service,
+            _blobs: blobs,
         })
     }
     pub fn id(&self) -> EndpointId {

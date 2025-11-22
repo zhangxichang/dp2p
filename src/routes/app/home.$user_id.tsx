@@ -52,7 +52,7 @@ import type { ID, Person } from "@/lib/types";
 import { Avatar } from "@/components/widgets/avatar";
 import { useShallow } from "zustand/shallow";
 import type { SQLiteUpdateEvent } from "@/lib/sqlite";
-import type { Connection } from "@/lib/endpoint";
+import type { ChatRequest, Connection, FriendRequest } from "@/lib/endpoint";
 import { Errored } from "@/components/errored";
 
 export const HomeStore = createStore(
@@ -129,8 +129,7 @@ export const Route = createFileRoute("/app/home/$user_id")({
           )
         )[0],
       );
-      handle_friend_request();
-      handle_chat_request();
+      handle_endpoint_event();
     }
     return {
       on_update_user,
@@ -399,118 +398,113 @@ function Component() {
   );
 }
 
-async function handle_friend_request() {
+async function handle_endpoint_event() {
   while (true) {
-    const friend_request =
-      await AppStore.getState().endpoint.friend_request_next();
-    if (!friend_request) break;
-    (async () => {
-      const friend_id = await friend_request.remote_id();
-      const friend_info =
-        await AppStore.getState().endpoint.request_person(friend_id);
-      const toast_id = toast(
-        <div className="flex-1">
-          <Label className="font-bold">好友请求</Label>
-          <Item>
-            <ItemMedia>
-              <Avatar image={friend_info.avatar}>
-                {friend_info.name.at(0)}
-              </Avatar>
-            </ItemMedia>
-            <ItemContent>
-              <ItemTitle>{friend_info.name}</ItemTitle>
-              <ItemDescription>{friend_info.bio}</ItemDescription>
-            </ItemContent>
-            <ItemActions>
-              <Button
-                variant="outline"
-                size="icon-sm"
-                onClick={async () => {
-                  await AppStore.getState().db.execute(
-                    QueryBuilder.insertInto("friend")
-                      .values({
-                        id: friend_id,
-                        user_id: HomeStore.getState().user.id,
-                        ...friend_info,
-                      })
-                      .compile(),
-                  );
-                  friend_request.accept();
-                  toast.dismiss(toast_id);
-                }}
-              >
-                <Check />
-              </Button>
-              <Button
-                variant="outline"
-                size="icon-sm"
-                onClick={() => {
-                  friend_request.reject();
-                  toast.dismiss(toast_id);
-                }}
-              >
-                <X />
-              </Button>
-            </ItemActions>
-          </Item>
-        </div>,
-        {
-          dismissible: false,
-          duration: Infinity,
-          classNames: {
-            content: "flex-1",
-            title: "flex-1 flex",
-          },
-        },
-      );
-    })();
+    const event = await AppStore.getState().endpoint.event_next();
+    if (!event) break;
+    if (event.kind === "FriendRequest") {
+      handle_friend_request_event(event.value);
+    } else if (event.kind === "ChatRequest") {
+      handle_chat_request_event(event.value);
+    }
   }
 }
-
-async function handle_chat_request() {
-  while (true) {
-    const chat_request = await AppStore.getState().endpoint.chat_request_next();
-    if (!chat_request) break;
-    (async () => {
-      const friend_id = await chat_request.remote_id();
-      if (
-        (
-          await AppStore.getState().db.query(
-            QueryBuilder.selectFrom("friend")
-              .where("user_id", "=", HomeStore.getState().user.id)
-              .where("id", "=", friend_id)
-              .limit(1)
-              .compile(),
-          )
-        ).length === 0
-      ) {
-        chat_request.reject();
-      } else {
-        const connection = await chat_request.accept();
-        HomeStore.setState((old) => ({
-          connections: old.connections.set(friend_id, connection),
-        }));
-        while (true) {
-          const connection = HomeStore.getState().connections.get(friend_id);
-          if (!connection) break;
-          const message = await connection.recv();
-          if (!message) break;
-          await AppStore.getState().db.execute(
-            QueryBuilder.insertInto("message")
-              .values({
-                sender_id: friend_id,
-                text: message,
-              })
-              .compile(),
-          );
-        }
-        HomeStore.setState((old) => {
-          old.connections.delete(friend_id);
-          return {
-            connections: old.connections,
-          };
-        });
-      }
-    })();
+async function handle_friend_request_event(friend_request: FriendRequest) {
+  const friend_id = await friend_request.remote_id();
+  const friend_info =
+    await AppStore.getState().endpoint.request_person(friend_id);
+  const toast_id = toast(
+    <div className="flex-1">
+      <Label className="font-bold">好友请求</Label>
+      <Item>
+        <ItemMedia>
+          <Avatar image={friend_info.avatar}>{friend_info.name.at(0)}</Avatar>
+        </ItemMedia>
+        <ItemContent>
+          <ItemTitle>{friend_info.name}</ItemTitle>
+          <ItemDescription>{friend_info.bio}</ItemDescription>
+        </ItemContent>
+        <ItemActions>
+          <Button
+            variant="outline"
+            size="icon-sm"
+            onClick={async () => {
+              await AppStore.getState().db.execute(
+                QueryBuilder.insertInto("friend")
+                  .values({
+                    id: friend_id,
+                    user_id: HomeStore.getState().user.id,
+                    ...friend_info,
+                  })
+                  .compile(),
+              );
+              friend_request.accept();
+              toast.dismiss(toast_id);
+            }}
+          >
+            <Check />
+          </Button>
+          <Button
+            variant="outline"
+            size="icon-sm"
+            onClick={() => {
+              friend_request.reject();
+              toast.dismiss(toast_id);
+            }}
+          >
+            <X />
+          </Button>
+        </ItemActions>
+      </Item>
+    </div>,
+    {
+      dismissible: false,
+      duration: Infinity,
+      classNames: {
+        content: "flex-1",
+        title: "flex-1 flex",
+      },
+    },
+  );
+}
+async function handle_chat_request_event(chat_request: ChatRequest) {
+  const friend_id = await chat_request.remote_id();
+  if (
+    (
+      await AppStore.getState().db.query(
+        QueryBuilder.selectFrom("friend")
+          .where("user_id", "=", HomeStore.getState().user.id)
+          .where("id", "=", friend_id)
+          .limit(1)
+          .compile(),
+      )
+    ).length === 0
+  ) {
+    chat_request.reject();
+  } else {
+    const connection = await chat_request.accept();
+    HomeStore.setState((old) => ({
+      connections: old.connections.set(friend_id, connection),
+    }));
+    while (true) {
+      const connection = HomeStore.getState().connections.get(friend_id);
+      if (!connection) break;
+      const message = await connection.recv();
+      if (!message) break;
+      await AppStore.getState().db.execute(
+        QueryBuilder.insertInto("message")
+          .values({
+            sender_id: friend_id,
+            text: message,
+          })
+          .compile(),
+      );
+    }
+    HomeStore.setState((old) => {
+      old.connections.delete(friend_id);
+      return {
+        connections: old.connections,
+      };
+    });
   }
 }

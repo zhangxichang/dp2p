@@ -1,5 +1,3 @@
-use std::path::PathBuf;
-
 use parking_lot::Mutex;
 use rusqlite::{ToSql, hooks::Action, params_from_iter, types::FromSql};
 use serde::{Deserialize, Serialize};
@@ -121,7 +119,7 @@ pub struct Sqlite {
     connection: Mutex<Option<rusqlite::Connection>>,
 }
 #[tauri::command(rename_all = "snake_case")]
-pub async fn sqlite_open(state: tauri::State<'_, State>, path: PathBuf) -> Result<(), Error> {
+pub async fn sqlite_open(state: tauri::State<'_, State>, path: String) -> Result<(), Error> {
     state
         .db
         .connection

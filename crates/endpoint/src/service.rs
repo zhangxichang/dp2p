@@ -25,6 +25,19 @@ enum Response {
     Chat(bool),
 }
 
+pub enum Event {
+    FriendRequest(FriendRequest),
+    ChatRequest(ChatRequest),
+}
+impl Event {
+    pub fn kind(&self) -> String {
+        match self {
+            Event::FriendRequest(_) => "FriendRequest".to_string(),
+            Event::ChatRequest(_) => "ChatRequest".to_string(),
+        }
+    }
+}
+
 #[derive(
     Archive, rkyv::Serialize, rkyv::Deserialize, Debug, Clone, serde::Serialize, serde::Deserialize,
 )]
@@ -82,21 +95,18 @@ impl ChatRequest {
 pub struct Service {
     endpoint: Endpoint,
     person: Arc<Person>,
-    friend_request_sender: mpsc::UnboundedSender<FriendRequest>,
-    chat_request_sender: mpsc::UnboundedSender<ChatRequest>,
+    event_sender: mpsc::UnboundedSender<Event>,
 }
 impl Service {
     pub fn new(
         endpoint: Endpoint,
         person: Person,
-        friend_request_sender: mpsc::UnboundedSender<FriendRequest>,
-        chat_request_sender: mpsc::UnboundedSender<ChatRequest>,
+        event_sender: mpsc::UnboundedSender<Event>,
     ) -> Self {
         Self {
             endpoint,
             person: Arc::new(person),
-            friend_request_sender,
-            chat_request_sender,
+            event_sender,
         }
     }
     async fn handle_connection(&self, connection: Connection) -> Result<()> {
@@ -113,10 +123,10 @@ impl Service {
                     }
                     Request::Friend => {
                         let (sender, receiver) = oneshot::channel::<bool>();
-                        self.friend_request_sender.send(FriendRequest {
+                        self.event_sender.send(Event::FriendRequest(FriendRequest {
                             remote_id: connection.remote_id(),
                             response_sender: sender,
-                        })?;
+                        }))?;
                         let result = receiver.await?;
                         send.write_all(&rkyv::to_bytes::<rkyv::rancor::Error>(&Response::Friend(
                             result,
@@ -127,10 +137,10 @@ impl Service {
                     }
                     Request::Chat => {
                         let (sender, receiver) = oneshot::channel::<bool>();
-                        self.chat_request_sender.send(ChatRequest {
+                        self.event_sender.send(Event::ChatRequest(ChatRequest {
                             response_sender: sender,
                             connection,
-                        })?;
+                        }))?;
                         let result = receiver.await?;
                         send.write_all(&rkyv::to_bytes::<rkyv::rancor::Error>(&Response::Chat(
                             result,
