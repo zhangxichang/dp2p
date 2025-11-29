@@ -116,7 +116,7 @@ function Component() {
   >();
   //导航到子路由
   useEffect(() => {
-    // navigate({ to: "/app/login" });
+    navigate({ to: "/app/login" });
   }, []);
   //窗口配置
   useEffect(() => {
