@@ -44,8 +44,9 @@ import type { SQLiteUpdateEvent } from "@/lib/sqlite";
                 while ((await sqlite_api.step(stmt)) === sqlite.SQLITE_ROW) {
                   const object: Record<string, any> = {};
                   for (let i = 0; i < sqlite_api.column_count(stmt); i++) {
-                    const key = sqlite_api.column_name(stmt, i);
-                    object[key] = sqlite_api.column(stmt, i);
+                    object[sqlite_api.column_name(stmt, i)] = structuredClone(
+                      sqlite_api.column(stmt, i),
+                    );
                   }
                   controller.enqueue(object);
                 }

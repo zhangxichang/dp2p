@@ -75,7 +75,7 @@ function Component() {
     () =>
       z.object({
         name: z.string().min(1, "用户名不能为空"),
-        avatar_file: z.file().optional(),
+        avatar_file: z.file().optional().nullable(),
       }),
     [],
   );
