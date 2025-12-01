@@ -1,6 +1,5 @@
 import clsx from "clsx";
-import { Label } from "@/shadcn/components/ui/label";
-import { Spinner } from "@/shadcn/components/ui/spinner";
+import Loader from "./widgets/loader";
 
 export function Loading(props: {
   hint_text: string;
@@ -9,13 +8,12 @@ export function Loading(props: {
   return (
     <div
       className={clsx(
-        "flex items-center justify-center gap-1",
+        "flex items-center justify-center",
         props.mode === "screen" && "w-dvw h-dvh",
         props.mode === "flex" || (!props.mode && "flex-1"),
       )}
     >
-      <Spinner className="size-6" />
-      <Label className="font-bold">{props.hint_text}</Label>
+      <Loader />
     </div>
   );
 }
