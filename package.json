@@ -1,6 +1,7 @@
 {
   "private": true,
   "type": "module",
+  "packageManager": "bun@1.3.2",
   "scripts": {
     "build:deps": "bun run build:endpoint",
     "build:endpoint": "wasm-pack build crates/endpoint-wasm --target web --release",
