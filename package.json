@@ -10,7 +10,8 @@
     "preview": "vite preview"
   },
   "stackblitz": {
-    "installDependencies": false
+    "installDependencies": false,
+    "startCommand": "bun run build:deps && bun i && bun run dev"
   },
   "devDependencies": {
     "@eslint/js": "^9.39.1",
