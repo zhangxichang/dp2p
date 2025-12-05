@@ -1,12 +1,6 @@
 import { Button } from "@/shadcn/components/ui/button";
-import {
-  DropdownMenu,
-  DropdownMenuContent,
-  DropdownMenuItem,
-  DropdownMenuTrigger,
-} from "@/shadcn/components/ui/dropdown-menu";
 import { createFileRoute, Outlet } from "@tanstack/react-router";
-import { Check, Clipboard, Contact, Send, UserPlus, X } from "lucide-react";
+import { Check, Contact, Send, UserPlus, X } from "lucide-react";
 import { useMemo, useRef, useState } from "react";
 import { useVirtualizer } from "@tanstack/react-virtual";
 import { Label } from "@/shadcn/components/ui/label";
@@ -196,6 +190,13 @@ export const Route = createFileRoute("/window/app/home/$user_id")({
                   <DialogTitle>添加好友</DialogTitle>
                   <DialogDescription>输入用户ID按回车搜索</DialogDescription>
                 </DialogHeader>
+                <Button
+                  onClick={() =>
+                    void navigator.clipboard.writeText(params.user_id)
+                  }
+                >
+                  复制你的ID
+                </Button>
                 <Form {...search_user_form}>
                   <FormField
                     control={search_user_form.control}
@@ -366,33 +367,17 @@ export const Route = createFileRoute("/window/app/home/$user_id")({
           </div>
           {/* 用户 */}
           <div className="p-2">
-            <DropdownMenu>
-              <DropdownMenuTrigger asChild>
-                <Item variant={"outline"} asChild>
-                  <a>
-                    <ItemMedia>
-                      <Avatar className="size-10" image={user.avatar}>
-                        {user.name.at(0)}
-                      </Avatar>
-                    </ItemMedia>
-                    <ItemContent>
-                      <ItemTitle>{user.name}</ItemTitle>
-                      <ItemDescription>{user.bio}</ItemDescription>
-                    </ItemContent>
-                  </a>
-                </Item>
-              </DropdownMenuTrigger>
-              <DropdownMenuContent align="start">
-                <DropdownMenuItem
-                  onClick={() =>
-                    void navigator.clipboard.writeText(params.user_id)
-                  }
-                >
-                  <Clipboard />
-                  <span>复制用户ID</span>
-                </DropdownMenuItem>
-              </DropdownMenuContent>
-            </DropdownMenu>
+            <Item variant={"outline"} asChild>
+              <ItemMedia>
+                <Avatar className="size-10" image={user.avatar}>
+                  {user.name.at(0)}
+                </Avatar>
+              </ItemMedia>
+              <ItemContent>
+                <ItemTitle>{user.name}</ItemTitle>
+                <ItemDescription>{user.bio}</ItemDescription>
+              </ItemContent>
+            </Item>
           </div>
         </div>
         <Outlet />
