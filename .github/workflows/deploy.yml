@@ -1,10 +1,24 @@
-name: 应用发布
+name: 发布
 on:
   push:
     tags: [v*.*.*]
 jobs:
+  verify:
+    name: 验证版本签名
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v5
+        with:
+          fetch-depth: 0
+      - name: 验证 Tag 签名
+        run: |
+          git verify-tag ${GITHUB_REF#refs/tags/} || {
+            echo "❌ 版本签名无效或缺失"
+            exit 1
+          }
   web:
-    name: Web
+    needs: verify
+    name: 发布到Web
     runs-on: ubuntu-latest
     steps:
       #环境依赖
@@ -33,7 +47,8 @@ jobs:
           accountId: ${{secrets.CLOUDFLARE_ACCOUNT_ID}}
           apiToken: ${{secrets.CLOUDFLARE_API_TOKEN}}
   windows:
-    name: Windows
+    needs: verify
+    name: 发布到Windows
     runs-on: windows-latest
     permissions:
       contents: write
