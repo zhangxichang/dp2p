@@ -185,7 +185,9 @@ export const Route = createFileRoute("/window/app/home/$user_id")({
               <DialogContent>
                 <DialogHeader>
                   <DialogTitle>添加好友</DialogTitle>
-                  <DialogDescription>输入用户ID按回车搜索</DialogDescription>
+                  <DialogDescription>
+                    复制自己的ID给别人，别人就可以通过在“对方ID”中输入你的ID搜索到你
+                  </DialogDescription>
                 </DialogHeader>
                 <Button
                   variant={"outline"}
@@ -202,11 +204,11 @@ export const Route = createFileRoute("/window/app/home/$user_id")({
                     render={({ field }) => (
                       <>
                         <FormItem>
-                          <FormLabel>用户ID</FormLabel>
+                          <FormLabel>对方ID</FormLabel>
                           <FormControl>
                             <Input
                               {...field}
-                              placeholder="输入用户ID"
+                              placeholder="输入用户ID按回车搜索"
                               disabled={search_user_form.formState.isSubmitting}
                               onKeyDown={(e) =>
                                 void (async () => {
