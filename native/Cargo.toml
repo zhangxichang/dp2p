@@ -11,7 +11,7 @@ crate-type = ["staticlib", "cdylib", "rlib"]
 tauri-build = { version = "2.5.3", features = [] }
 
 [dependencies]
-person-protocol = { path = "../crates/person-protocol" }
+person-protocol = { workspace = true }
 tauri = { version = "2.9.4", features = [] }
 serde_json = "1.0.145"
 tauri-plugin-prevent-default = { version = "4.0.3", features = [

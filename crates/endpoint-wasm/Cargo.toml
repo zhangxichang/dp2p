@@ -7,7 +7,7 @@ edition = "2024"
 crate-type = ["cdylib"]
 
 [dependencies]
-person-protocol = { path = "../person-protocol" }
+person-protocol = { workspace = true }
 wasm-bindgen = "0.2.106"
 wasm-bindgen-futures = "0.4.56"
 serde-wasm-bindgen = "0.6.5"
