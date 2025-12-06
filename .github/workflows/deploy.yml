@@ -1,4 +1,6 @@
 name: 发布
+permissions:
+  contents: read
 on:
   push:
     tags: [v*.*.*]
