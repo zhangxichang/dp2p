@@ -13,8 +13,7 @@ jobs:
           fetch-depth: 0
       - name: 验证 Tag 签名
         run: |
-          git verify-tag ${GITHUB_REF#refs/tags/} || {
-            echo "❌ 版本签名无效或缺失"
+          git verify-tag v${GITHUB_REF#refs/tags/} || {
             exit 1
           }
   web:
