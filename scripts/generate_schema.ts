@@ -7,7 +7,7 @@ const schema_sql = db
     "SELECT sql FROM sqlite_schema WHERE name NOT LIKE 'sqlite_%' AND name NOT LIKE 'sqlean_%'",
   )
   .all(null)
-  .map((value) => value.sql.replace(/(")/, "IF NOT EXISTS $1") + ";");
+  .map((value) => value.sql.replace(/(")/g, "IF NOT EXISTS $1") + ";");
 db.close();
 await Bun.file(db_path).delete();
 await Bun.write("public/schema.sql", schema_sql.join("\n") + "\n");
