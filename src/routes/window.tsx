@@ -24,6 +24,7 @@ import {
 import { Toaster } from "@/shadcn/components/ui/sonner";
 import { createFileRoute, Outlet, useNavigate } from "@tanstack/react-router";
 import {
+  BookMarked,
   ExternalLink,
   Info,
   Maximize,
@@ -137,7 +138,7 @@ export const Route = createFileRoute("/window")({
                   </DialogHeader>
                   <div className="flex">
                     <Label className="font-bold text-lg">贡献者</Label>
-                    <div className="flex-1 flex justify-end">
+                    <div className="flex-1 flex justify-end gap-1">
                       <Button
                         variant="outline"
                         size="icon-sm"
@@ -148,6 +149,17 @@ export const Route = createFileRoute("/window")({
                         }
                       >
                         <ExternalLink />
+                      </Button>
+                      <Button
+                        variant="outline"
+                        size="icon-sm"
+                        onClick={() =>
+                          void open_url(
+                            "https://github.com/ZhangXiChang/starlink",
+                          )
+                        }
+                      >
+                        <BookMarked />
                       </Button>
                     </div>
                   </div>
