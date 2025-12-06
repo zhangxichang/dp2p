@@ -70,6 +70,7 @@ pub fn run() {
             api::endpoint::endpoint_get_secret_key_id,
             api::endpoint::endpoint_person_protocol_event_next,
             api::endpoint::endpoint_create,
+            api::endpoint::endpoint_close,
             api::endpoint::endpoint_is_create,
             api::endpoint::endpoint_request_person,
             api::endpoint::endpoint_request_friend,
