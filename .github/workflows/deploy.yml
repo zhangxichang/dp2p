@@ -6,21 +6,25 @@ on:
     tags: [v*.*.*]
 jobs:
   verify:
-    name: 验证版本签名
+    name: 验证版本签名有效性
     runs-on: ubuntu-latest
     steps:
+      #环境依赖
       - uses: actions/checkout@v5
         with:
           fetch-tags: true
           fetch-depth: 0
+      #执行流程
+      - name: 导入 GPG 公钥
+        run: echo "${{secrets.GPG_PUBLIC_KEY}}" | gpg --import
       - name: 验证 Tag 签名
         run: |
-          git verify-tag v${GITHUB_REF#refs/tags/} || {
+          git verify-tag ${GITHUB_REF#refs/tags/} || {
             exit 1
           }
   web:
     needs: verify
-    name: 发布到Web
+    name: 发布到 Web
     runs-on: ubuntu-latest
     steps:
       #环境依赖
@@ -30,9 +34,9 @@ jobs:
         with:
           bun-version: latest
       #执行流程
-      - name: 安装wasm32-unknown-unknown
+      - name: 安装 wasm32-unknown-unknown
         run: rustup target install wasm32-unknown-unknown
-      - name: 安装wasm-pack
+      - name: 安装 wasm-pack
         run: cargo binstall wasm-pack
       - name: 构建依赖包
         run: bun run build:deps
@@ -50,7 +54,7 @@ jobs:
           apiToken: ${{secrets.CLOUDFLARE_API_TOKEN}}
   windows:
     needs: verify
-    name: 发布到Windows
+    name: 发布到 Windows
     runs-on: windows-latest
     permissions:
       contents: write
@@ -62,9 +66,9 @@ jobs:
         with:
           bun-version: latest
       #执行流程
-      - name: 安装wasm32-unknown-unknown
+      - name: 安装 wasm32-unknown-unknown
         run: rustup target install wasm32-unknown-unknown
-      - name: 安装wasm-pack
+      - name: 安装 wasm-pack
         run: cargo binstall wasm-pack
       - name: 构建依赖包
         run: bun run build:deps
