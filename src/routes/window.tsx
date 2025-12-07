@@ -23,16 +23,7 @@ import {
 } from "@/shadcn/components/ui/menubar";
 import { Toaster } from "@/shadcn/components/ui/sonner";
 import { createFileRoute, Outlet, useNavigate } from "@tanstack/react-router";
-import {
-  BookMarked,
-  ExternalLink,
-  Info,
-  Maximize,
-  Minimize,
-  Minimize2,
-  User,
-  X,
-} from "lucide-react";
+import { Info, Maximize, Minimize, Minimize2, User, X } from "lucide-react";
 import { useEffect, useState } from "react";
 import { Octokit } from "octokit";
 import { open_url } from "@/lib/opener";
@@ -136,45 +127,50 @@ export const Route = createFileRoute("/window")({
                       两地俱秋夕，相望共星河。
                     </DialogDescription>
                   </DialogHeader>
-                  <div className="flex">
-                    <Label className="font-bold text-lg">贡献者</Label>
+                  <Label className="font-bold text-lg">贡献者</Label>
+                  <div className="flex justify-center">
+                    {contributors && (
+                      <div className="flex -space-x-2 ring-background ring-2">
+                        {contributors.map((contributor) => (
+                          <Avatar>
+                            <AvatarImage src={contributor.avatar_url} />
+                            <AvatarFallback>
+                              <User />
+                            </AvatarFallback>
+                          </Avatar>
+                        ))}
+                      </div>
+                    )}
+                  </div>
+                  <div className="flex items-center">
+                    <Label className="text-sm text-gray-700">
+                      版本 v0.0.12
+                    </Label>
                     <div className="flex-1 flex justify-end gap-1">
                       <Button
-                        variant="outline"
-                        size="icon-sm"
-                        onClick={() =>
-                          void open_url(
-                            "https://github.com/ZhangXiChang/starlink/graphs/contributors",
-                          )
-                        }
-                      >
-                        <ExternalLink />
-                      </Button>
-                      <Button
-                        variant="outline"
-                        size="icon-sm"
+                        variant="link"
+                        className="p-0 text-blue-500"
                         onClick={() =>
                           void open_url(
                             "https://github.com/ZhangXiChang/starlink",
                           )
                         }
                       >
-                        <BookMarked />
+                        源代码
+                      </Button>
+                      <Button
+                        variant="link"
+                        className="p-0 text-blue-500"
+                        onClick={() =>
+                          void open_url(
+                            "https://github.com/ZhangXiChang/starlink/graphs/contributors",
+                          )
+                        }
+                      >
+                        贡献者列表
                       </Button>
                     </div>
                   </div>
-                  {contributors && (
-                    <div className="flex -space-x-2 ring-background ring-2">
-                      {contributors.map((contributor) => (
-                        <Avatar>
-                          <AvatarImage src={contributor.avatar_url} />
-                          <AvatarFallback>
-                            <User />
-                          </AvatarFallback>
-                        </Avatar>
-                      ))}
-                    </div>
-                  )}
                 </DialogContent>
               </Dialog>
             </div>
