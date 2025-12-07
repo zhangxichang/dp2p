@@ -54,7 +54,7 @@ import { Errored } from "@/components/errored";
 
 export const HomeStore = createStore(
   subscribeWithSelector(() => ({
-    user: {} as Person & ID,
+    user: undefined as (Person & ID) | undefined,
     friends: new Map<string, Person & ID>(),
     connections: new Map<string, Connection>(),
   })),
@@ -102,8 +102,8 @@ export const Route = createFileRoute("/window/app/home/$user_id")({
         await update_friends();
       }
     });
-    if (!(await AppStore.getState().endpoint.is_create())) {
-      await AppStore.getState().endpoint.create(
+    if (!(await AppStore.getState().endpoint.is_open())) {
+      await AppStore.getState().endpoint.open(
         (
           await AppStore.getState().db.query<{ key: Uint8Array }>(
             QueryBuilder.selectFrom("user")
@@ -126,6 +126,13 @@ export const Route = createFileRoute("/window/app/home/$user_id")({
       void handle_person_protocol_event();
     }
   },
+  onLeave: () =>
+    void (async () => {
+      HomeStore.setState(() => {
+        return { user: undefined, friends: new Map(), connections: new Map() };
+      });
+      await AppStore.getState().endpoint.close();
+    })(),
   component: () => {
     const params = Route.useParams();
     const user = useStore(HomeStore, (state) => state.user);
@@ -369,13 +376,13 @@ export const Route = createFileRoute("/window/app/home/$user_id")({
           <div className="p-2">
             <Item variant={"outline"}>
               <ItemMedia>
-                <Avatar className="size-10" image={user.avatar}>
-                  {user.name.at(0)}
+                <Avatar className="size-10" image={user?.avatar}>
+                  {user?.name.at(0)}
                 </Avatar>
               </ItemMedia>
               <ItemContent>
-                <ItemTitle>{user.name}</ItemTitle>
-                <ItemDescription>{user.bio}</ItemDescription>
+                <ItemTitle>{user?.name}</ItemTitle>
+                <ItemDescription>{user?.bio}</ItemDescription>
               </ItemContent>
             </Item>
           </div>
@@ -423,7 +430,7 @@ async function handle_friend_request_event(friend_request: FriendRequest) {
                   QueryBuilder.insertInto("friend")
                     .values({
                       id: friend_id,
-                      user_id: HomeStore.getState().user.id,
+                      user_id: HomeStore.getState().user!.id,
                       ...friend_info,
                     })
                     .compile(),
@@ -467,7 +474,7 @@ async function handle_chat_request_event(chat_request: ChatRequest) {
       await AppStore.getState().db.query(
         QueryBuilder.selectFrom("friend")
           .select("id")
-          .where("user_id", "=", HomeStore.getState().user.id)
+          .where("user_id", "=", HomeStore.getState().user!.id)
           .where("id", "=", friend_id)
           .limit(1)
           .compile(),
@@ -477,8 +484,8 @@ async function handle_chat_request_event(chat_request: ChatRequest) {
     await chat_request.reject();
   } else {
     const connection = await chat_request.accept();
-    HomeStore.setState((old) => ({
-      connections: old.connections.set(friend_id, connection),
+    HomeStore.setState((v) => ({
+      connections: v.connections.set(friend_id, connection),
     }));
     while (true) {
       const connection = HomeStore.getState().connections.get(friend_id);
@@ -494,10 +501,10 @@ async function handle_chat_request_event(chat_request: ChatRequest) {
           .compile(),
       );
     }
-    HomeStore.setState((old) => {
-      old.connections.delete(friend_id);
+    HomeStore.setState((v) => {
+      v.connections.delete(friend_id);
       return {
-        connections: old.connections,
+        connections: v.connections,
       };
     });
   }

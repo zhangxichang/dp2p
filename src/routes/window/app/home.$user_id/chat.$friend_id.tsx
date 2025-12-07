@@ -45,8 +45,8 @@ export const Route = createFileRoute(
           params.friend_id,
         );
         if (!connection) return;
-        HomeStore.setState((old) => ({
-          connections: old.connections.set(params.friend_id, connection),
+        HomeStore.setState((v) => ({
+          connections: v.connections.set(params.friend_id, connection),
         }));
         while (true) {
           const connection = HomeStore.getState().connections.get(
@@ -64,10 +64,10 @@ export const Route = createFileRoute(
               .compile(),
           );
         }
-        HomeStore.setState((old) => {
-          old.connections.delete(params.friend_id);
+        HomeStore.setState((v) => {
+          v.connections.delete(params.friend_id);
           return {
-            connections: old.connections,
+            connections: v.connections,
           };
         });
       })();
@@ -220,14 +220,14 @@ export const Route = createFileRoute(
                       className="size-10"
                       image={
                         messages[value.index].sender_id === params.user_id
-                          ? user.avatar
+                          ? user?.avatar
                           : messages[value.index].sender_id === params.friend_id
                             ? friend?.avatar
                             : null
                       }
                     >
                       {messages[value.index].sender_id === params.user_id
-                        ? user.name.at(0)
+                        ? user?.name.at(0)
                         : messages[value.index].sender_id === params.friend_id
                           ? friend?.name.at(0)
                           : null}
@@ -238,7 +238,7 @@ export const Route = createFileRoute(
                         className="p-0 font-bold text-base"
                       >
                         {messages[value.index].sender_id === params.user_id
-                          ? user.name
+                          ? user?.name
                           : messages[value.index].sender_id === params.friend_id
                             ? friend?.name
                             : null}
