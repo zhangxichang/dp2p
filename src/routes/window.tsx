@@ -120,7 +120,7 @@ export const Route = createFileRoute("/window")({
                 open={about_dialog_opened}
                 onOpenChange={set_about_dialog_opened}
               >
-                <DialogContent>
+                <DialogContent onOpenAutoFocus={(e) => e.preventDefault()}>
                   <DialogHeader>
                     <DialogTitle>关于</DialogTitle>
                     <DialogDescription>
