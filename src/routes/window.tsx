@@ -143,9 +143,7 @@ export const Route = createFileRoute("/window")({
                     )}
                   </div>
                   <div className="flex items-center">
-                    <Label className="text-sm text-gray-700">
-                      版本 v0.0.12
-                    </Label>
+                    <Label className="text-sm text-gray-700">版本 v0.1.0</Label>
                     <div className="flex-1 flex justify-end gap-1">
                       <Button
                         variant="link"
