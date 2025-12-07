@@ -10,13 +10,20 @@
 - **开箱即用的Web应用**：无需安装，直接通过浏览器访问 **[星链](https://starlink.zhangxichang.com)** 即可使用。
 - **高性能Rust后端**：应用核心（WebAssembly模块与原生后端）由Rust编写，兼顾高性能与内存安全。
 
+## 项目依赖
+
+在开始任何操作前，请确保安装了所有必要的依赖。
+
+- **[Rust](https://rust-lang.org)** - 系统编程语言和构建工具链
+- **[Bun](https://bun.com)** - JavaScript 运行时和包管理器
+- **[wasm-pack](https://drager.github.io/wasm-pack)** - Rust WebAssembly 打包和发布工具
+- **[wasm32-unknown-unknown](https://doc.rust-lang.org/beta/rustc/platform-support/wasm32-unknown-unknown.html)** - Rust WebAssembly 编译目标
+
 ## 快速开始
 
 项目支持Web与原生（基于Tauri）两种形式，可独立开发和构建。
 
-### 安装项目依赖(TODO)
-
-在开始任何操作前，请确保安装所有必要的依赖。
+### 构建安装依赖包
 
 ```bash
 bun run build:deps
