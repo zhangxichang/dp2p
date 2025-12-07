@@ -131,8 +131,8 @@ export const Route = createFileRoute("/window")({
                   <div className="flex justify-center">
                     {contributors && (
                       <div className="flex -space-x-2 ring-background ring-2">
-                        {contributors.map((contributor) => (
-                          <Avatar>
+                        {contributors.map((contributor, index) => (
+                          <Avatar key={index}>
                             <AvatarImage src={contributor.avatar_url} />
                             <AvatarFallback>
                               <User />
