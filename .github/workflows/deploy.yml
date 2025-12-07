@@ -19,6 +19,7 @@ jobs:
         run: echo "${{secrets.GPG_PUBLIC_KEY}}" | gpg --import
       - name: 验证 Tag 签名
         run: |
+          git tag -n
           git verify-tag ${GITHUB_REF#refs/tags/} || {
             exit 1
           }
