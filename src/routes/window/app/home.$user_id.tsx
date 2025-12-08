@@ -1,6 +1,15 @@
 import { Button } from "@/shadcn/components/ui/button";
 import { createFileRoute, Outlet } from "@tanstack/react-router";
-import { Check, Contact, Send, UserPlus, X } from "lucide-react";
+import {
+  Check,
+  Contact,
+  Mail,
+  Send,
+  User,
+  UserPlus,
+  Users,
+  X,
+} from "lucide-react";
 import { useMemo, useRef, useState } from "react";
 import { useVirtualizer } from "@tanstack/react-virtual";
 import { Label } from "@/shadcn/components/ui/label";
@@ -51,6 +60,7 @@ import {
   type FriendRequest,
 } from "@/lib/endpoint";
 import { Errored } from "@/components/errored";
+import { ButtonGroup } from "@/shadcn/components/ui/button-group";
 
 export const HomeStore = createStore(
   subscribeWithSelector(() => ({
@@ -171,7 +181,22 @@ export const Route = createFileRoute("/window/app/home/$user_id")({
     });
     return (
       <div className="flex-1 flex min-h-0">
-        <div className="w-80 flex flex-col border-t border-r rounded-tr-md min-h-0">
+        {/*侧栏按钮*/}
+        <div className="flex flex-col items-center pl-2 pr-2">
+          <ButtonGroup orientation={"vertical"}>
+            <Button variant={"outline"} size={"icon-lg"}>
+              <Mail className="size-6" />
+            </Button>
+            <Button variant={"outline"} size={"icon-lg"}>
+              <User className="size-6" />
+            </Button>
+            <Button variant={"outline"} size={"icon-lg"}>
+              <Users className="size-6" />
+            </Button>
+          </ButtonGroup>
+        </div>
+        {/*侧栏面板*/}
+        <div className="w-80 flex flex-col border-t border-r border-l rounded-tr-md rounded-tl-md min-h-0">
           {/* 好友 */}
           <div className="flex items-center p-2 gap-2 border-b">
             <Contact />
@@ -193,17 +218,9 @@ export const Route = createFileRoute("/window/app/home/$user_id")({
                 <DialogHeader>
                   <DialogTitle>添加好友</DialogTitle>
                   <DialogDescription>
-                    复制自己的ID给别人，别人就可以通过在“对方ID”中输入你的ID搜索到你
+                    在下方的用户搜索栏通过对方的ID搜索你想添加为好友的用户
                   </DialogDescription>
                 </DialogHeader>
-                <Button
-                  variant={"outline"}
-                  onClick={() =>
-                    void navigator.clipboard.writeText(params.user_id)
-                  }
-                >
-                  复制你的ID
-                </Button>
                 <Form {...search_user_form}>
                   <FormField
                     control={search_user_form.control}
@@ -211,54 +228,68 @@ export const Route = createFileRoute("/window/app/home/$user_id")({
                     render={({ field }) => (
                       <>
                         <FormItem>
-                          <FormLabel>对方ID</FormLabel>
+                          <FormLabel>用户搜索</FormLabel>
                           <FormControl>
-                            <Input
-                              {...field}
-                              placeholder="输入用户ID按回车搜索"
-                              disabled={search_user_form.formState.isSubmitting}
-                              onKeyDown={(e) =>
-                                void (async () => {
-                                  if (e.key !== "Enter") return;
-                                  e.preventDefault();
-                                  await search_user_form.handleSubmit(
-                                    async (form) => {
-                                      if (
-                                        (
-                                          await AppStore.getState().db.query(
-                                            QueryBuilder.selectFrom("friend")
-                                              .select("id")
-                                              .where(
-                                                "user_id",
-                                                "=",
-                                                params.user_id,
-                                              )
-                                              .where("id", "=", form.id)
-                                              .limit(1)
-                                              .compile(),
-                                          )
-                                        ).length !== 0
-                                      ) {
-                                        search_user_form.setError("id", {
-                                          message: "已经是你的好友了",
+                            <ButtonGroup className="w-full">
+                              <Input
+                                {...field}
+                                placeholder="输入对方ID按回车搜索"
+                                disabled={
+                                  search_user_form.formState.isSubmitting
+                                }
+                                onKeyDown={(e) =>
+                                  void (async () => {
+                                    if (e.key !== "Enter") return;
+                                    e.preventDefault();
+                                    await search_user_form.handleSubmit(
+                                      async (form) => {
+                                        if (
+                                          (
+                                            await AppStore.getState().db.query(
+                                              QueryBuilder.selectFrom("friend")
+                                                .select("id")
+                                                .where(
+                                                  "user_id",
+                                                  "=",
+                                                  params.user_id,
+                                                )
+                                                .where("id", "=", form.id)
+                                                .limit(1)
+                                                .compile(),
+                                            )
+                                          ).length !== 0
+                                        ) {
+                                          search_user_form.setError("id", {
+                                            message: "已经是你的好友了",
+                                          });
+                                        }
+                                        const person =
+                                          await AppStore.getState().endpoint.request_person(
+                                            form.id,
+                                          );
+                                        set_search_user_result({
+                                          id: form.id,
+                                          ...person,
                                         });
-                                      }
-                                      const person =
-                                        await AppStore.getState().endpoint.request_person(
-                                          form.id,
+                                        set_send_friend_request_button_disabled(
+                                          false,
                                         );
-                                      set_search_user_result({
-                                        id: form.id,
-                                        ...person,
-                                      });
-                                      set_send_friend_request_button_disabled(
-                                        false,
-                                      );
-                                    },
-                                  )();
-                                })()
-                              }
-                            />
+                                      },
+                                    )();
+                                  })()
+                                }
+                              />
+                              <Button
+                                variant={"outline"}
+                                onClick={() =>
+                                  void navigator.clipboard.writeText(
+                                    params.user_id,
+                                  )
+                                }
+                              >
+                                点击复制你的ID
+                              </Button>
+                            </ButtonGroup>
                           </FormControl>
                           <FormMessage />
                         </FormItem>
