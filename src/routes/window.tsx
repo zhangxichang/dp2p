@@ -1,9 +1,4 @@
 import { Loading } from "@/components/loading";
-import {
-  Avatar,
-  AvatarFallback,
-  AvatarImage,
-} from "@/shadcn/components/ui/avatar";
 import { Button } from "@/shadcn/components/ui/button";
 import {
   Dialog,
@@ -27,6 +22,7 @@ import { Info, Maximize, Minimize, Minimize2, User, X } from "lucide-react";
 import { useEffect, useState } from "react";
 import { Octokit } from "octokit";
 import { open_url } from "@/lib/opener";
+import { Avatar } from "@/components/widgets/avatar";
 
 let tauri_window: typeof import("@tauri-apps/api/window") | undefined;
 if (import.meta.env.TAURI_ENV_PLATFORM !== undefined) {
@@ -132,11 +128,8 @@ export const Route = createFileRoute("/window")({
                     {contributors && (
                       <div className="flex -space-x-2 ring-background ring-2">
                         {contributors.map((contributor, index) => (
-                          <Avatar key={index}>
-                            <AvatarImage src={contributor.avatar_url} />
-                            <AvatarFallback>
-                              <User />
-                            </AvatarFallback>
+                          <Avatar key={index} image={contributor.avatar_url}>
+                            <User />
                           </Avatar>
                         ))}
                       </div>

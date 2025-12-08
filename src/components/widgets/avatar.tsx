@@ -7,7 +7,7 @@ import { useEffect, useState, type ComponentPropsWithoutRef } from "react";
 
 export function Avatar(
   props: ComponentPropsWithoutRef<typeof AvatarComponent> & {
-    image?: Uint8Array | File | null;
+    image?: Uint8Array | File | string | null;
   },
 ) {
   const [image_url, set_image_url] = useState<string>();
@@ -17,6 +17,8 @@ export function Avatar(
       url = URL.createObjectURL(new Blob([Uint8Array.from(props.image)]));
     } else if (props.image instanceof File) {
       url = URL.createObjectURL(props.image);
+    } else if (typeof props.image === "string") {
+      url = props.image;
     }
     set_image_url(url);
     if (url !== undefined) return () => URL.revokeObjectURL(url);
