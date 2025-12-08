@@ -21,4 +21,4 @@ jobs:
       - name: 语义化发布
         env:
           GITHUB_TOKEN: ${{secrets.SEMANTIC_RELEASE_TOKEN}}
-        run: npx semantic-release
+        run: npx --package conventional-changelog-conventionalcommits semantic-release
