@@ -10,17 +10,7 @@ import { QueryBuilder } from "@/lib/query_builder";
 import { zodResolver } from "@hookform/resolvers/zod";
 import { createFileRoute } from "@tanstack/react-router";
 import { useVirtualizer } from "@tanstack/react-virtual";
-import {
-  Radio,
-  RadioTower,
-  Signal,
-  SignalHigh,
-  SignalLow,
-  SignalMedium,
-  SignalZero,
-  Waypoints,
-  WifiOff,
-} from "lucide-react";
+import { Radio, RadioTower, Signal, Waypoints, WifiOff } from "lucide-react";
 import { useEffect, useMemo, useRef, useState } from "react";
 import { useForm } from "react-hook-form";
 import Textarea from "react-textarea-autosize";
@@ -32,6 +22,7 @@ import { useStore } from "zustand";
 import type { ConnectionType } from "@/lib/endpoint";
 import { AppStore } from "../../app";
 import { Errored } from "@/components/errored";
+import { Label } from "@/shadcn/components/ui/label";
 
 export const Route = createFileRoute(
   "/window/app/home/$user_id/chat/$friend_id",
@@ -172,29 +163,21 @@ export const Route = createFileRoute(
           </Button>
           <div className="flex gap-1">
             {!connection && <WifiOff className="size-5 text-red-700" />}
-            {(() => {
-              if (connection_type === "Direct") {
-                return <Radio className="size-5 text-green-700" />;
-              } else if (connection_type === "Relay") {
-                return <RadioTower className="size-5 text-yellow-600" />;
-              } else if (connection_type === "Mixed") {
-                return <Waypoints className="size-5 text-blue-500" />;
-              }
-            })()}
-            {connection_latency !== undefined &&
-              (() => {
-                if (connection_latency < 100) {
-                  return <Signal className="size-5 text-green-700" />;
-                } else if (connection_latency < 200) {
-                  return <SignalHigh className="size-5 text-yellow-600" />;
-                } else if (connection_latency < 400) {
-                  return <SignalMedium className="size-5 text-red-700" />;
-                } else if (connection_latency < 800) {
-                  return <SignalLow className="size-5 text-red-700" />;
-                } else if (connection_latency < 1600) {
-                  return <SignalZero className="size-5 text-red-700" />;
-                }
-              })()}
+            {connection_type === "Direct" && (
+              <Radio className="size-5 text-green-700" />
+            )}
+            {connection_type === "Relay" && (
+              <RadioTower className="size-5 text-yellow-600" />
+            )}
+            {connection_type === "Mixed" && (
+              <Waypoints className="size-5 text-blue-500" />
+            )}
+            {(connection_type !== undefined || connection_latency !== 0) && (
+              <>
+                <Signal className="size-5 text-green-700" />
+                <Label>{connection_latency}</Label>
+              </>
+            )}
           </div>
         </div>
         <div className="flex-1 flex flex-col p-2 min-h-0 gap-1">
