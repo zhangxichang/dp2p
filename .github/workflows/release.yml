@@ -25,6 +25,10 @@ jobs:
         run: bun run build:deps
       - name: 安装依赖包
         run: bun install
+      - name: 生成版本号
+        run: |
+          TAG_NAME="${{github.event.release.tag_name}}"
+          bun scripts/generate_version.ts ${TAG_NAME#v}
       - name: 构建
         run: bun run build
       #发布
@@ -40,6 +44,8 @@ jobs:
     runs-on: windows-latest
     permissions:
       contents: write
+      id-token: write
+      attestations: write
     steps:
       #环境依赖
       - uses: actions/checkout@v6
@@ -56,6 +62,10 @@ jobs:
         run: bun run build:deps
       - name: 安装依赖包
         run: bun install
+      - name: 生成版本号
+        run: |
+          TAG_NAME="${{github.event.release.tag_name}}"
+          bun scripts/generate_version.ts ${TAG_NAME#v}
       - name: 生成应用图标资源
         run: bun tauri icon public/icon.svg
       - name: 构建
@@ -66,9 +76,17 @@ jobs:
           $TARGET_PATH="target/release/starlink-windows.exe"
           echo "TARGET_PATH=$TARGET_PATH" >> $env:GITHUB_ENV
           Move-Item -Path target/release/native.exe -Destination $TARGET_PATH
+      - name: 生成证明文件
+        uses: actions/attest-build-provenance@v3
+        id: attest
+        with:
+          subject-path: ${{env.TARGET_PATH}}
       - name: 发布
         uses: softprops/action-gh-release@v2
         env:
           GITHUB_TOKEN: ${{secrets.GITHUB_TOKEN}}
         with:
-          files: ${{env.TARGET_PATH}}
+          files: |
+            LICENSE
+            ${{env.TARGET_PATH}}
+            ${{steps.attest.outputs.bundle-path}}

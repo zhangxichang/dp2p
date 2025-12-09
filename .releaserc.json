@@ -1,6 +1,6 @@
 {
   "release": {
-    "branches": ["main"]
+    "branches": ["release"]
   },
   "plugins": [
     "@semantic-release/github",

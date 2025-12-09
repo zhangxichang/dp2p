@@ -41,6 +41,14 @@ export const Route = createFileRoute("/window")({
         avatar_url?: string;
       }[]
     >();
+    const [version, set_version] = useState<string>();
+    //获取版本
+    useEffect(
+      () =>
+        void (async () =>
+          set_version(await (await fetch("/version")).text()))(),
+      [],
+    );
     //导航到子路由
     useEffect(() => {
       void navigate({ to: "/window/app" });
@@ -136,8 +144,11 @@ export const Route = createFileRoute("/window")({
                     )}
                   </div>
                   <div className="flex items-center">
-                    {/*TODO 版本标识符*/}
-                    {/*<Label className="text-sm text-gray-700">版本 v0.1.0</Label>*/}
+                    {version !== undefined && (
+                      <Label className="text-sm text-gray-700">
+                        版本 v{version}
+                      </Label>
+                    )}
                     <div className="flex-1 flex justify-end gap-1">
                       <Button
                         variant="link"
