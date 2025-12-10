@@ -36,7 +36,7 @@ jobs:
     name: 测试
     needs:
       - check
-    if: needs.release=="true"
+    if: ${{needs.release=="true"}}
     runs-on: ubuntu-latest
     steps:
       - name: 测试
