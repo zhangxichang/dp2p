@@ -8,9 +8,13 @@ permissions:
 jobs:
   check:
     name: 检查是否需要发布
-    runs-on: ubuntu-latest
     outputs:
       release: ${{steps.check.outputs.release}}
+    runs-on: ubuntu-latest
+    permissions:
+      contents: write
+      issues: write
+      pull-requests: write
     steps:
       - uses: actions/checkout@v6
         with:
