@@ -101,19 +101,13 @@ jobs:
       issues: write
       pull-requests: write
     steps:
-      - uses: actions/create-github-app-token@v2
-        id: app_token
-        with:
-          app-id: ${{vars.STARLINK_RELEASE_BOT_ID}}
-          private-key: ${{secrets.STARLINK_RELEASE_BOT_PRIVATE_KEY}}
       - uses: actions/checkout@v6
         with:
-          token: ${{steps.app_token.outputs.token}}
           fetch-depth: 0
       - uses: actions/download-artifact@v6
         with:
           path: artifact
       - name: 发布
         env:
-          GITHUB_TOKEN: ${{steps.app_token.outputs.token}}
+          GITHUB_TOKEN: ${{secrets.RELEASE_TOKEN}}
         run: npx --package conventional-changelog-conventionalcommits --package @semantic-release/exec --package semantic-release semantic-release
