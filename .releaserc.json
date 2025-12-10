@@ -9,8 +9,7 @@
     [
       "@semantic-release/exec",
       {
-        "verifyReleaseCmd": "echo 'verifyReleaseCmd:1111111Release'",
-        "publishCmd": "echo 'publishCmd:发布'"
+        "verifyReleaseCmd": "echo 'verifyReleaseCmd:1111111Release'"
       }
     ],
     "@semantic-release/github"

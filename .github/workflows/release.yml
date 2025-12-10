@@ -25,3 +25,19 @@ jobs:
           GITHUB_TOKEN: ${{secrets.GITHUB_TOKEN}}
         run: |
           npx --package conventional-changelog-conventionalcommits --package @semantic-release/exec --package semantic-release semantic-release --dry-run
+          if [-f "release"];then
+            echo "发布"
+            echo "release=true" >> $GITHUB_OUTPUT
+          else
+            echo "不发布"
+            echo "release=false" >> $GITHUB_OUTPUT
+          fi
+  test:
+    name: 测试
+    needs:
+      - check
+    if: needs.check.outputs.release=="true"
+    runs-on: ubuntu-latest
+    steps:
+      - name: 测试
+        run: echo "测试通过"
