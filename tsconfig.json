@@ -1,4 +1,5 @@
 {
+  "exclude": ["src/shadcn"],
   "compilerOptions": {
     "baseUrl": ".",
     "paths": {

@@ -3,4 +3,4 @@ resolver = "3"
 members = ["native", "crates/endpoint-wasm", "crates/person-protocol"]
 
 [workspace.dependencies]
-person-protocol = { path = "./crates/person-protocol" }
+person-protocol = { path = "crates/person-protocol" }
