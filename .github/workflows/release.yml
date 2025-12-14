@@ -37,7 +37,7 @@ jobs:
             echo "release=false" >> $GITHUB_OUTPUT
           fi
   build-release-web:
-    name: 构建发布 Web
+    name: 构建发布到 Web
     needs:
       - check-release
     if: ${{needs.check-release.outputs.release=='true'}}
@@ -65,7 +65,7 @@ jobs:
           accountId: ${{secrets.CLOUDFLARE_ACCOUNT_ID}}
           apiToken: ${{secrets.CLOUDFLARE_API_TOKEN}}
   build-windows:
-    name: 构建 Windows
+    name: 构建 Windows 版本
     needs:
       - check-release
     if: ${{needs.check-release.outputs.release=='true'}}
@@ -95,6 +95,20 @@ jobs:
         uses: actions/upload-artifact@v5
         with:
           path: ${{env.TARGET_PATH}}
+  build-relay:
+    name: 构建中继服务程序
+    needs:
+      - check-release
+    if: ${{needs.check-release.outputs.release=='true'}}
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v6
+      - name: 构建
+        run: cargo build -p starlink-relay --release
+      - name: 上传构建产物
+        uses: actions/upload-artifact@v5
+        with:
+          path: target/release/starlink-relay
   release:
     needs:
       - build-windows
@@ -131,5 +145,5 @@ jobs:
           github_owner: ZhangXiChang
           github_repo: starlink
           gitee_owner: zhangxichang
-          gitee_repo: starlink-release
+          gitee_repo: starlink-release-latest
           gitee_token: ${{secrets.GITEE_TOKEN}}

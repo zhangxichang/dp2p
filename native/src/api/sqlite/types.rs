@@ -1,5 +1,5 @@
 use rusqlite::{ToSql, types::FromSql};
-use serde::{Deserialize, Serialize};
+use serde::{ Serialize};
 
 use crate::{error::Error, option_ext::OptionGet};
 
@@ -101,7 +101,7 @@ impl FromSql for SQLiteType {
     }
 }
 
-#[derive(Serialize, Deserialize, Clone)]
+#[derive(Serialize, Clone)]
 pub struct SQLiteUpdateEvent {
     pub update_type: i32,
     pub db_name: String,

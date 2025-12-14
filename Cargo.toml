@@ -1,6 +1,11 @@
 [workspace]
 resolver = "3"
-members = ["native", "crates/endpoint-wasm", "crates/person-protocol"]
+members = [
+    "native",
+    "crates/endpoint-wasm",
+    "crates/person-protocol",
+    "crates/starlink-relay",
+]
 
 [workspace.dependencies]
 person-protocol = { path = "crates/person-protocol" }
