@@ -1,12 +1,12 @@
 use eyre::Result;
-use futures_lite::StreamExt;
 use iroh::{
-    EndpointId, SecretKey, Watcher,
+    RelayConfig, RelayMap, RelayMode, SecretKey, Watcher,
     endpoint::{Connection as RawConnection, ConnectionType},
     protocol::Router,
 };
 use iroh_blobs::{BlobsProtocol, store::mem::MemStore};
-use iroh_gossip::{Gossip, TopicId};
+use iroh_gossip::Gossip;
+use iroh_relay::RelayQuicConfig;
 use person_protocol::PersonProtocol;
 use tokio::sync::{Mutex, mpsc};
 use wasm_bindgen::{JsError, JsValue, prelude::wasm_bindgen};
@@ -118,7 +118,7 @@ pub struct Endpoint {
     router: Router,
     person_protocol: PersonProtocol,
     person_protocol_event_receiver: Mutex<mpsc::UnboundedReceiver<person_protocol::Event>>,
-    gossip_protocol: Gossip,
+    _gossip_protocol: Gossip,
     _blobs_protocol: BlobsProtocol,
 }
 #[wasm_bindgen]
@@ -127,6 +127,10 @@ impl Endpoint {
         let (person_protocol_event_sender, person_protocol_event_receiver) =
             mpsc::unbounded_channel();
         let endpoint = iroh::Endpoint::builder()
+            .relay_mode(RelayMode::Custom(RelayMap::from_iter([RelayConfig {
+                url: "https://dev.zhangxichang.com:10281".parse()?,
+                quic: Some(RelayQuicConfig { port: 10282 }),
+            }])))
             .secret_key(SecretKey::from_bytes(secret_key.as_slice().try_into()?))
             .bind()
             .await?;
@@ -143,7 +147,7 @@ impl Endpoint {
             router,
             person_protocol,
             person_protocol_event_receiver: Mutex::new(person_protocol_event_receiver),
-            gossip_protocol,
+            _gossip_protocol: gossip_protocol,
             _blobs_protocol: blobs_protocol,
         })
     }
@@ -196,39 +200,6 @@ impl Endpoint {
             .latency(id.parse()?)
             .map(|v| v.as_millis() as _))
     }
-    pub async fn subscribe_group_chat(
-        &self,
-        id: String,
-        bootstrap: Option<Vec<String>>,
-    ) -> Result<(), JsError> {
-        let (send, mut recv) = self
-            .gossip_protocol
-            .subscribe(
-                id.parse()?,
-                bootstrap
-                    .map(|v| {
-                        v.into_iter()
-                            .map(|v| v.parse::<EndpointId>())
-                            .collect::<Result<Vec<_>, _>>()
-                    })
-                    .transpose()?
-                    .unwrap_or_default(),
-            )
-            .await?
-            .split();
-        wasm_bindgen_futures::spawn_local(async move {
-            async {
-                while let Some(event) = recv.try_next().await? {
-                    log::info!("{:?}", event);
-                }
-                eyre::Ok(())
-            }
-            .await
-            .unwrap();
-        });
-        send.broadcast("你好".as_bytes().into()).await?;
-        Ok(())
-    }
 }
 
 #[wasm_bindgen]
@@ -238,13 +209,10 @@ pub fn generate_secret_key() -> Vec<u8> {
         .to_vec()
 }
 #[wasm_bindgen]
-pub fn get_secret_key_id(secret_key: &[u8]) -> Result<String, JsError> {
-    Ok(iroh::SecretKey::from_bytes(secret_key.try_into()?)
-        .public()
-        .to_string())
-}
-
-#[wasm_bindgen]
-pub fn generate_group_id() -> String {
-    TopicId::from_bytes(rand::random()).to_string()
+pub fn get_secret_key_id(secret_key: Vec<u8>) -> Result<String, JsError> {
+    Ok(
+        iroh::SecretKey::from_bytes(secret_key.as_slice().try_into()?)
+            .public()
+            .to_string(),
+    )
 }
