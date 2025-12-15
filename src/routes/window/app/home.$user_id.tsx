@@ -206,6 +206,7 @@ export const Route = createFileRoute("/window/app/home/$user_id")({
           <ButtonGroup orientation={"vertical"}>
             {sidebar_button_group.map((button, index) => (
               <Button
+                key={index}
                 variant={button.selected ? "secondary" : "outline"}
                 size={"icon-lg"}
                 onClick={() => {
