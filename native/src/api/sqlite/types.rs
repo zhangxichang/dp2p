@@ -1,5 +1,5 @@
 use rusqlite::{ToSql, types::FromSql};
-use serde::{ Serialize};
+use serde::Serialize;
 
 use crate::{error::Error, option_ext::OptionGet};
 

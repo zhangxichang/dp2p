@@ -1,13 +1,19 @@
+use base64::{Engine, prelude::BASE64_STANDARD};
 use eyre::Result;
+use futures_lite::StreamExt;
 use iroh::{
-    RelayConfig, RelayMap, RelayMode, SecretKey, Watcher,
+    EndpointId, RelayConfig, RelayMap, RelayMode, SecretKey, Watcher,
     endpoint::{Connection as RawConnection, ConnectionType},
     protocol::Router,
 };
 use iroh_blobs::{BlobsProtocol, store::mem::MemStore};
-use iroh_gossip::Gossip;
+use iroh_gossip::{
+    Gossip, TopicId,
+    api::{GossipReceiver, GossipSender},
+};
 use iroh_relay::RelayQuicConfig;
 use person_protocol::PersonProtocol;
+use serde::{Deserialize, Serialize};
 use tokio::sync::{Mutex, mpsc};
 use wasm_bindgen::{JsError, JsValue, prelude::wasm_bindgen};
 
@@ -114,11 +120,33 @@ impl Connection {
 }
 
 #[wasm_bindgen]
+pub struct Group(GossipSender, Mutex<GossipReceiver>);
+#[wasm_bindgen]
+impl Group {
+    pub async fn next_event(&self) -> Result<Option<JsValue>, JsError> {
+        let Some(event) = self.1.lock().await.try_next().await? else {
+            return Ok(None);
+        };
+        Ok(Some(serde_wasm_bindgen::to_value(&event)?))
+    }
+    pub async fn send(&self, message: String) -> Result<(), JsError> {
+        self.0.broadcast(message.into()).await?;
+        Ok(())
+    }
+}
+
+#[derive(Serialize, Deserialize)]
+pub struct Ticket {
+    pub id: TopicId,
+    pub bootstrap: Vec<EndpointId>,
+}
+
+#[wasm_bindgen]
 pub struct Endpoint {
     router: Router,
     person_protocol: PersonProtocol,
     person_protocol_event_receiver: Mutex<mpsc::UnboundedReceiver<person_protocol::Event>>,
-    _gossip_protocol: Gossip,
+    gossip_protocol: Gossip,
     _blobs_protocol: BlobsProtocol,
 }
 #[wasm_bindgen]
@@ -147,7 +175,7 @@ impl Endpoint {
             router,
             person_protocol,
             person_protocol_event_receiver: Mutex::new(person_protocol_event_receiver),
-            _gossip_protocol: gossip_protocol,
+            gossip_protocol,
             _blobs_protocol: blobs_protocol,
         })
     }
@@ -200,6 +228,15 @@ impl Endpoint {
             .latency(id.parse()?)
             .map(|v| v.as_millis() as _))
     }
+    pub async fn subscribe_group(&self, ticket: String) -> Result<Group, JsError> {
+        let ticket = serde_json::from_slice::<Ticket>(&BASE64_STANDARD.decode(ticket)?)?;
+        let (sender, receiver) = self
+            .gossip_protocol
+            .subscribe(ticket.id, ticket.bootstrap)
+            .await?
+            .split();
+        Ok(Group(sender, Mutex::new(receiver)))
+    }
 }
 
 #[wasm_bindgen]
@@ -215,4 +252,18 @@ pub fn get_secret_key_id(secret_key: Vec<u8>) -> Result<String, JsError> {
             .public()
             .to_string(),
     )
+}
+#[wasm_bindgen]
+pub fn generate_group_id() -> String {
+    TopicId::from_bytes(rand::random()).to_string()
+}
+#[wasm_bindgen]
+pub fn generate_ticket(group_id: String, bootstrap: Vec<String>) -> Result<String, JsError> {
+    Ok(BASE64_STANDARD.encode(serde_json::to_vec(&Ticket {
+        id: group_id.parse()?,
+        bootstrap: bootstrap
+            .into_iter()
+            .map(|v| v.parse())
+            .collect::<Result<_, _>>()?,
+    })?))
 }
