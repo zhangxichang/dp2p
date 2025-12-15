@@ -26,3 +26,7 @@ tokio = { version = "1.48.0", default-features = false, features = [
     "parking_lot",
     "sync",
 ] }
+serde = { version = "1.0.228", features = ["derive"] }
+base64 = "0.22.1"
+serde_json = "1.0.145"
+futures-lite = "2.6.1"
