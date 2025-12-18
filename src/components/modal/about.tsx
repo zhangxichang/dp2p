@@ -1,8 +1,8 @@
 import { For } from "solid-js";
 import { open_url } from "~/lib/opener";
-import { Image } from "~/components/widgets/image";
 import { createAsync } from "@solidjs/router";
 import { query_contributors, query_version } from "~/query";
+import Image from "../widgets/image";
 
 export default function AboutModal() {
   const version = createAsync(() => query_version());

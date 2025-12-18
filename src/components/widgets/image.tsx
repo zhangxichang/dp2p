@@ -6,7 +6,7 @@ import {
   type JSX,
 } from "solid-js";
 
-export function Image(
+export default function Image(
   props: {
     image?: Uint8Array | Array<number> | File | string | null;
   } & JSX.ImgHTMLAttributes<HTMLImageElement>,

@@ -1,7 +1,7 @@
 import { Maximize, Minimize, Minimize2, X } from "lucide-solid";
 import { createSignal, onCleanup, onMount, Show } from "solid-js";
 
-export function WindowControlBar(props: {
+export default function WindowControlBar(props: {
   tauri_window: typeof import("@tauri-apps/api/window");
 }) {
   const [is_maximized, set_is_maximized] = createSignal<boolean>();

@@ -1,7 +1,7 @@
 import { createSignal, ErrorBoundary, lazy, Show, Suspense } from "solid-js";
 import ErrorModal from "../modal/error";
 import LoadingModal from "../modal/loading";
-import { WindowControlBar } from "./window_control_bar";
+import WindowControlBar from "./window_control_bar";
 
 const LazyAboutModal = lazy(() => import("~/components/modal/about"));
 
