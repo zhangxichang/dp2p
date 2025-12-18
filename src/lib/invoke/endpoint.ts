@@ -1,5 +1,5 @@
 import { invoke } from "@tauri-apps/api/core";
-import type { Person } from "../types";
+import type { Person } from "~/lib/types";
 
 export async function generate_secret_key() {
   try {

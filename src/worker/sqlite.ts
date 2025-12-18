@@ -3,8 +3,8 @@ import sqlite_esm_factory from "wa-sqlite/dist/wa-sqlite.mjs";
 import * as sqlite from "wa-sqlite";
 //@ts-expect-error 导入JS模块
 import { OPFSCoopSyncVFS as VFS } from "wa-sqlite/src/examples/OPFSCoopSyncVFS";
-import { err, ok, type Command } from "./sqlite-api";
-import type { SQLiteUpdateEvent } from "../lib/sqlite";
+import { err, ok, type Command } from "~/worker/sqlite-api";
+import type { SQLiteUpdateEvent } from "~/lib/sqlite";
 
 void (async () => {
   //eslint-disable-next-line @typescript-eslint/no-unsafe-assignment

@@ -1,5 +1,8 @@
 {
   "compilerOptions": {
+    "paths": {
+      "~/*": ["./src/*"],
+    },
     "target": "esnext",
     "module": "esnext",
     "lib": ["ESNext", "DOM", "DOM.AsyncIterable"],
@@ -16,6 +19,7 @@
     "verbatimModuleSyntax": true,
     "noUncheckedSideEffectImports": true,
     "noFallthroughCasesInSwitch": true,
-    "useDefineForClassFields": true
-  }
+    "useDefineForClassFields": true,
+    "isolatedModules": true,
+  },
 }

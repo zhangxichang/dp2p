@@ -5,15 +5,15 @@ import type {
   Connection as WasmConnection,
   Group as WasmGroup,
 } from "@starlink/endpoint";
-import type { Person } from "./types";
+import type { Person } from "~/lib/types";
 
-type Native = { kind: "Native" } & typeof import("./invoke/endpoint");
+type Native = { kind: "Native" } & typeof import("~/lib/invoke/endpoint");
 type Web = { kind: "Web" } & typeof import("@starlink/endpoint");
 
 let api: Native | Web;
 let wasm_url: string | undefined;
 if (import.meta.env.TAURI_ENV_PLATFORM !== undefined) {
-  api = { kind: "Native", ...(await import("./invoke/endpoint")) };
+  api = { kind: "Native", ...(await import("~/lib/invoke/endpoint")) };
 } else {
   api = { kind: "Web", ...(await import("@starlink/endpoint")) };
   wasm_url = (await import("@starlink/endpoint/endpoint_wasm_bg.wasm?url"))

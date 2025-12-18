@@ -1,11 +1,11 @@
 import type { OPFSFileSystem } from "opfs-worker";
 
-type Native = { kind: "Native" } & typeof import("./invoke/file_system");
+type Native = { kind: "Native" } & typeof import("~/lib/invoke/file_system");
 type Web = { kind: "Web" } & typeof import("opfs-worker");
 
 let api: Native | Web;
 if (import.meta.env.TAURI_ENV_PLATFORM !== undefined) {
-  api = { kind: "Native", ...(await import("./invoke/file_system")) };
+  api = { kind: "Native", ...(await import("~/lib/invoke/file_system")) };
 } else {
   api = { kind: "Web", ...(await import("opfs-worker")) };
 }

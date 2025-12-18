@@ -1,5 +1,5 @@
 import { Channel, invoke } from "@tauri-apps/api/core";
-import type { SQLiteUpdateEvent } from "../sqlite";
+import type { SQLiteUpdateEvent } from "~/lib/sqlite";
 
 export async function open(path: string) {
   try {

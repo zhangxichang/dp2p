@@ -1,14 +1,14 @@
-import type { SQLiteConnection } from "../worker/sqlite-api";
+import type { SQLiteConnection } from "~/worker/sqlite-api";
 import type { CompiledQuery } from "kysely";
 
-type Native = { kind: "Native" } & typeof import("../lib/invoke/sqlite");
-type Web = { kind: "Web" } & typeof import("../worker/sqlite-api");
+type Native = { kind: "Native" } & typeof import("~/lib/invoke/sqlite");
+type Web = { kind: "Web" } & typeof import("~/worker/sqlite-api");
 
 let api: Native | Web;
 if (import.meta.env.TAURI_ENV_PLATFORM !== undefined) {
-  api = { kind: "Native", ...(await import("../lib/invoke/sqlite")) };
+  api = { kind: "Native", ...(await import("~/lib/invoke/sqlite")) };
 } else {
-  api = { kind: "Web", ...(await import("../worker/sqlite-api")) };
+  api = { kind: "Web", ...(await import("~/worker/sqlite-api")) };
 }
 
 export interface SQLiteUpdateEvent {
