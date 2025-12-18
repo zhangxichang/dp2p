@@ -12,13 +12,13 @@ export default function WindowControlBar(props: {
         await props.tauri_window.getCurrentWindow().isMaximized(),
       ))();
     //监控窗口缩放
-    const un_on_resized = props.tauri_window.getCurrentWindow().onResized(() =>
-      (async () => {
+    const un_on_resized = props.tauri_window
+      .getCurrentWindow()
+      .onResized(async () =>
         set_is_maximized(
           await props.tauri_window.getCurrentWindow().isMaximized(),
-        );
-      })(),
-    );
+        ),
+      );
     onCleanup(async () => (await un_on_resized)());
   });
   return (
