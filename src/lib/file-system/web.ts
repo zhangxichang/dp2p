@@ -11,7 +11,6 @@ export class WebFileSystem implements FileSystemAdapter {
     return new WebFileSystem(createWorker());
   }
   async remove_file(path: string) {
-    console.info(`Web实现的删除文件:${path}`);
     await this.opfs.remove(path);
   }
 }
