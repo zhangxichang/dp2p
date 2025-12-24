@@ -1,10 +1,8 @@
 /node_modules/
-/dist/
 /target/
-/.tanstack/
 /artifacts/
-
-/pkg_view.html
+/.output/
+/.vinxi/
+/.wrangler/
 
 /public/schema.sql
-/public/version

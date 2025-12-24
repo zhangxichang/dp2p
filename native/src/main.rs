@@ -3,6 +3,7 @@
     windows_subsystem = "windows"
 )]
 
-fn main() {
+#[tokio::main]
+async fn main() {
     app_lib::run();
 }

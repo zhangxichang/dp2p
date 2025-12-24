@@ -1,14 +1,13 @@
 {
-  "exclude": ["src/shadcn"],
   "compilerOptions": {
-    "baseUrl": ".",
     "paths": {
-      "@/*": ["src/*"]
+      "~/*": ["./src/*"],
     },
     "target": "esnext",
     "module": "esnext",
     "lib": ["ESNext", "DOM", "DOM.AsyncIterable"],
-    "jsx": "react-jsx",
+    "jsx": "preserve",
+    "jsxImportSource": "solid-js",
     "noEmit": true,
     "moduleResolution": "bundler",
     "moduleDetection": "force",
@@ -20,6 +19,7 @@
     "verbatimModuleSyntax": true,
     "noUncheckedSideEffectImports": true,
     "noFallthroughCasesInSwitch": true,
-    "useDefineForClassFields": true
-  }
+    "useDefineForClassFields": true,
+    "isolatedModules": true,
+  },
 }
