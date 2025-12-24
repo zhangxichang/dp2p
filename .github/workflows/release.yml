@@ -54,6 +54,7 @@ jobs:
           cargo binstall wasm-pack
           bun run build:deps
           bun install
+          bun run generate:deps
           bun scripts/generate_version.ts ${{needs.check-release.outputs.version}}
       - name: 构建
         run: bun run build
@@ -82,8 +83,8 @@ jobs:
           cargo binstall wasm-pack
           bun run build:deps
           bun install
+          bun run generate:deps
           bun scripts/generate_version.ts ${{needs.check-release.outputs.version}}
-          bun tauri icon public/icon.svg
       - name: 构建
         run: bun tauri build
       - name: 处理构建产物

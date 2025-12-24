@@ -69,8 +69,9 @@ export class WebSQLite implements SQLiteAdapter {
       while ((await this.get_api().step(stmt)) === sqlite.SQLITE_ROW) {
         const object: Record<string, unknown> = {};
         for (let i = 0; i < this.get_api().column_count(stmt); i++) {
-          object[this.get_api().column_name(stmt, i)] = structuredClone(
-            this.get_api().column(stmt, i),
+          object[this.get_api().column_name(stmt, i)] = this.get_api().column(
+            stmt,
+            i,
           );
         }
         result.push(object as T);
