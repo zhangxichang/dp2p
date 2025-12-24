@@ -3,6 +3,7 @@ import eslint from "@eslint/js";
 import tseslint from "typescript-eslint";
 
 export default defineConfig(
+  { ignores: ["src/generated/**/*"] },
   eslint.configs.recommended,
   tseslint.configs.recommendedTypeChecked,
   { languageOptions: { parserOptions: { projectService: true } } },

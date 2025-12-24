@@ -1,4 +1,3 @@
-import type { DB } from "~/db_schema.gen";
 import {
   DummyDriver,
   Kysely,
@@ -6,6 +5,7 @@ import {
   SqliteIntrospector,
   SqliteQueryCompiler,
 } from "kysely";
+import type { DB } from "~/generated/db_schema";
 
 export const QueryBuilder = new Kysely<DB>({
   dialect: {

@@ -4,7 +4,10 @@
   "scripts": {
     "build:deps": "bun run build:endpoint",
     "build:endpoint": "wasm-pack build crates/endpoint-wasm --target web --release",
-    "prepare": "prisma generate && bun prisma db push && bun run scripts/generate_schema.ts",
+    "generate:deps": "bun run generate:db-schema && bun run generate:ipc-bindings",
+    "generate:db-schema": "prisma generate && bun prisma db push && bun run scripts/generate_db_schema.ts",
+    "generate:ipc-bindings": "cargo run --bin generate_ipc_bindings",
+    "prepare": "bun run generate:deps",
     "check": "tsc && eslint src",
     "dev": "vinxi dev",
     "build": "vinxi build && bun run check",
@@ -48,6 +51,7 @@
     "opfs-worker": "^1.3.1",
     "solid-js": "^1.9.10",
     "tailwind-merge": "^3.4.0",
+    "taurpc": "^1.8.1",
     "theme-change": "^2.5.0",
     "vinxi": "^0.5.10",
     "wa-sqlite": "github:rhashimoto/wa-sqlite#v1.0.9"

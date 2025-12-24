@@ -1,7 +1,7 @@
 import type { Remote } from "comlink";
 import type { SQLiteAdapter } from "./sqlite/interface";
 
-type Native = { kind: "Native" };
+type Native = { kind: "Native" } & typeof import("./sqlite/native");
 type Web = {
   kind: "Web";
   worker: typeof import("*?worker");
@@ -9,7 +9,7 @@ type Web = {
 
 let api: Native | Web;
 if (import.meta.env.TAURI_ENV_PLATFORM !== undefined) {
-  api = { kind: "Native" };
+  api = { kind: "Native", ...(await import("./sqlite/native")) };
 } else {
   api = {
     kind: "Web",
@@ -20,7 +20,7 @@ if (import.meta.env.TAURI_ENV_PLATFORM !== undefined) {
 
 export function create_sqlite(): SQLiteAdapter | Remote<SQLiteAdapter> {
   if (api.kind === "Native") {
-    throw new Error("未实现");
+    return new api.NativeSQLite();
   } else if (api.kind === "Web") {
     return api.wrap<SQLiteAdapter>(new api.worker.default());
   } else {

@@ -4,8 +4,8 @@ datasource db {
 
 generator kysely {
   provider="prisma-kysely"
-  output="src"
-  fileName="db_schema.gen.ts"
+  output="src/generated"
+  fileName="db_schema.ts"
   bytesTypeOverride="Uint8Array"
 }
 

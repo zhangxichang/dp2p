@@ -1,8 +1,9 @@
 mod api;
-mod error;
 mod option_ext;
+mod router;
+mod sqlite;
 
-use crate::api::Api;
+pub use crate::router::router;
 
 #[cfg_attr(mobile, tauri::mobile_entry_point)]
 pub fn run() {
@@ -51,39 +52,7 @@ pub fn run() {
         .plugin(tauri_plugin_prevent_default.build())
         .plugin(tauri_plugin_os::init())
         .plugin(tauri_plugin_opener::init())
-        .manage(Api::default())
-        .invoke_handler(tauri::generate_handler![
-            api::log::log_error,
-            api::file_system::fs_remove_file,
-            api::file_system::fs_read_file,
-            api::file_system::fs_create_file,
-            api::file_system::fs_exists,
-            api::file_system::fs_remove_dir_all,
-            api::sqlite::sqlite_open,
-            api::sqlite::sqlite_is_open,
-            api::sqlite::sqlite_close,
-            api::sqlite::sqlite_on_update,
-            api::sqlite::sqlite_execute_batch,
-            api::sqlite::sqlite_execute,
-            api::sqlite::sqlite_query,
-            api::endpoint::endpoint_generate_secret_key,
-            api::endpoint::endpoint_get_secret_key_id,
-            api::endpoint::endpoint_person_protocol_event_next,
-            api::endpoint::endpoint_open,
-            api::endpoint::endpoint_is_open,
-            api::endpoint::endpoint_close,
-            api::endpoint::endpoint_request_person,
-            api::endpoint::endpoint_request_friend,
-            api::endpoint::endpoint_request_chat,
-            api::endpoint::endpoint_conn_type,
-            api::endpoint::endpoint_latency,
-            api::endpoint::person_protocol_event_next::endpoint_person_protocol_event_next_as_request_remote_id,
-            api::endpoint::person_protocol_event_next::endpoint_person_protocol_event_next_as_request_accept,
-            api::endpoint::person_protocol_event_next::endpoint_person_protocol_event_next_as_request_reject,
-            api::endpoint::person_protocol_event_next::endpoint_person_protocol_event_next_as_chat_request_accept,
-            api::endpoint::connection::endpoint_connection_send,
-            api::endpoint::connection::endpoint_connection_recv,
-        ])
+        .invoke_handler(router().into_handler())
         .run(tauri::generate_context!())
         .unwrap();
 }
