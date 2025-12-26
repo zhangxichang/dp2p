@@ -39,7 +39,7 @@ export default function Register() {
   return (
     <fieldset class="fieldset bg-base-100 border border-base-300 rounded-box p-6 pt-2">
       <legend class="fieldset-legend">注册账户</legend>
-      <label class="label">输入用户名注册你的账户</label>
+      <span class="label">输入用户名注册你的账户</span>
       <form
         class="flex flex-col pt-4"
         onSubmit={async (e) => {
