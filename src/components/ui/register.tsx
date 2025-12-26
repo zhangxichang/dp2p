@@ -5,7 +5,7 @@ import { For, Show } from "solid-js";
 import { type } from "arktype";
 import { use_main_store } from "../context";
 import { QueryBuilder } from "~/lib/query_builder";
-import { generate_secret_key, get_secret_key_id } from "~/lib/endpoint";
+import { generate_secret_key, get_secret_key_id } from "~/lib/module/endpoint";
 
 const FormSchema = type({
   user_name: type("string > 0").configure({ message: "用户名不能为空" }),

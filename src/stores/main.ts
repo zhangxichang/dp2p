@@ -1,10 +1,10 @@
 import type { Remote } from "comlink";
 import { onCleanup } from "solid-js";
-import { create_endpoint } from "~/lib/endpoint";
-import type { EndpointAdapter } from "~/lib/endpoint/interface";
-import { create_sqlite } from "~/lib/sqlite";
-import type { SQLiteAdapter } from "~/lib/sqlite/interface";
-import type { SQLiteUpdateEvent } from "~/lib/sqlite/types";
+import { create_endpoint } from "~/lib/module/endpoint";
+import type { EndpointAdapter } from "~/lib/module/endpoint/interface";
+import { create_sqlite } from "~/lib/module/sqlite";
+import type { SQLiteAdapter } from "~/lib/module/sqlite/interface";
+import type { SQLiteUpdateEvent } from "~/lib/module/sqlite/types";
 
 export class MainStore {
   sqlite: SQLiteAdapter | Remote<SQLiteAdapter>;

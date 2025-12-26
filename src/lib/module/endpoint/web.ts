@@ -6,7 +6,7 @@ import wasm_init, {
   Person as WasmPerson,
 } from "@starlink/endpoint";
 import wasm_url from "@starlink/endpoint/endpoint_wasm_bg.wasm?url";
-import type { Person } from "../types";
+import type { Person } from "~/lib/types";
 
 export class Endpoint implements EndpointAdapter {
   private endpoint?: WasmEndpoint;

@@ -1,6 +1,6 @@
 import type { CompiledQuery } from "kysely";
-import type { Module } from "../module";
 import type { SQLiteUpdateEvent } from "./types";
+import type { Module } from "~/lib/module";
 
 export interface SQLiteAdapter extends Module {
   open(path: string): Promise<void>;
