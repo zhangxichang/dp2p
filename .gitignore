@@ -5,4 +5,4 @@
 /.vinxi/
 /.wrangler/
 
-/public/schema.sql
+/public/db_schema.sql

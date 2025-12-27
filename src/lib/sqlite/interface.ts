@@ -1,8 +1,8 @@
 import type { CompiledQuery } from "kysely";
 import type { SQLiteUpdateEvent } from "./types";
-import type { Free } from "../interface";
+import type { Free, Init } from "../interface";
 
-export interface SQLiteModule extends Free {
+export interface SQLiteModule extends Init, Free {
   create_sqlite(path: string): Promise<SQLite>;
 }
 

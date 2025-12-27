@@ -19,9 +19,11 @@ export class MainStore {
   }
   static async new() {
     const sqlite_module = new SQLiteModuleAdapter();
+    await sqlite_module.init();
+    const sqlite = await sqlite_module.create_sqlite("data.db");
+    await sqlite.execute_sql(await (await fetch("/db_schema.sql")).text());
     const endpoint_module = new EndpointModuleAdapter();
     await endpoint_module.init();
-    const sqlite = await sqlite_module.create_sqlite("data.db");
     return new MainStore(sqlite_module, endpoint_module, sqlite);
   }
   async cleanup() {

@@ -4,6 +4,7 @@ import type { CompiledQuery } from "kysely";
 import type { SQLiteUpdateEvent } from "./types";
 
 export class SQLiteModuleImpl implements SQLiteModule {
+  init() {}
   free() {}
   async create_sqlite(path: string) {
     return await SQLiteImpl.new(path);

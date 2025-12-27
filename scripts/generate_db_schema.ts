@@ -28,4 +28,4 @@ const schema_sql = db
   });
 db.close();
 await Bun.file(db_path).delete();
-await Bun.write("public/schema.sql", schema_sql.join("\n") + "\n");
+await Bun.write("public/db_schema.sql", schema_sql.join("\n") + "\n");

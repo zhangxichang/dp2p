@@ -6,21 +6,25 @@ import type { CompiledQuery } from "kysely";
 import type { SQLiteUpdateEvent } from "./types";
 
 export class SQLiteModuleImpl implements SQLiteModule {
-  private worker: Worker;
-  private api: Remote<SQLiteWorker>;
+  private worker?: Worker;
+  private api?: Remote<SQLiteWorker>;
 
-  constructor() {
+  private get_api() {
+    return this.api!;
+  }
+  async init() {
     const worker = new Worker();
+    const api = wrap<SQLiteWorker>(worker);
+    await api.init();
     this.worker = worker;
-    this.api = wrap<SQLiteWorker>(worker);
+    this.api = api;
   }
   free() {
-    this.worker.terminate();
+    this.worker?.terminate();
   }
   async create_sqlite(path: string) {
-    console.info("创建SQLite实例");
-    const db = await this.api.open_db(path);
-    return await SQLiteImpl.new(this.api, db);
+    const db = await this.get_api().open_db(path);
+    return await SQLiteImpl.new(this.get_api(), db);
   }
 }
 
