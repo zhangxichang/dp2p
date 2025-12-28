@@ -34,7 +34,7 @@ export class EndpointImpl implements Endpoint {
       await WasmEndpoint.new(secret_key, WasmPerson.from_object(person)),
     );
   }
-  async shutdown() {
-    await this.endpoint.shutdown();
+  async close() {
+    await this.endpoint.close();
   }
 }

@@ -8,5 +8,5 @@ export interface EndpointModule extends Init {
 }
 
 export interface Endpoint {
-  shutdown(): Promise<void>;
+  close(): Promise<void>;
 }

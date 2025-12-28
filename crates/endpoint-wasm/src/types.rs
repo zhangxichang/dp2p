@@ -1,12 +1,10 @@
+use bytes::Bytes;
 use futures_lite::StreamExt;
 use iroh::EndpointId;
-use iroh_gossip::{
-    TopicId,
-    api::{GossipReceiver, GossipSender},
-};
+use iroh_gossip::{TopicId, api::GossipTopic};
 use serde::{Deserialize, Serialize};
-use tokio::sync::Mutex;
 use wasm_bindgen::{JsError, JsValue, prelude::wasm_bindgen};
+use wasm_bindgen_futures::spawn_local;
 
 use crate::traits::JsErrorExt;
 
@@ -18,11 +16,6 @@ pub struct Ticket {
 
 #[wasm_bindgen]
 pub struct PersonProtocolEvent(person_protocol::Event);
-impl PersonProtocolEvent {
-    pub fn new(inner: person_protocol::Event) -> Self {
-        Self(inner)
-    }
-}
 #[wasm_bindgen]
 impl PersonProtocolEvent {
     pub fn kind(&self) -> String {
@@ -43,17 +36,14 @@ impl PersonProtocolEvent {
         }
     }
 }
+impl From<person_protocol::Event> for PersonProtocolEvent {
+    fn from(value: person_protocol::Event) -> Self {
+        Self(value)
+    }
+}
 
 #[wasm_bindgen]
 pub struct Person(person_protocol::Person);
-impl Person {
-    pub fn new(inner: person_protocol::Person) -> Self {
-        Self(inner)
-    }
-    pub fn inner(self) -> person_protocol::Person {
-        self.0
-    }
-}
 #[wasm_bindgen]
 impl Person {
     pub fn from_object(value: JsValue) -> Result<Self, JsError> {
@@ -63,6 +53,16 @@ impl Person {
     }
     pub fn to_object(&self) -> Result<JsValue, JsError> {
         Ok(serde_wasm_bindgen::to_value(&self.0)?)
+    }
+}
+impl From<person_protocol::Person> for Person {
+    fn from(value: person_protocol::Person) -> Self {
+        Self(value)
+    }
+}
+impl From<Person> for person_protocol::Person {
+    fn from(value: Person) -> Self {
+        value.0
     }
 }
 
@@ -98,11 +98,6 @@ impl ChatRequest {
 
 #[wasm_bindgen]
 pub struct Connection(iroh::endpoint::Connection);
-impl Connection {
-    pub fn new(inner: iroh::endpoint::Connection) -> Self {
-        Self(inner)
-    }
-}
 #[wasm_bindgen]
 impl Connection {
     pub async fn send(&self, message: String) -> Result<(), JsError> {
@@ -120,24 +115,42 @@ impl Connection {
         Ok(None)
     }
 }
-
-#[wasm_bindgen]
-pub struct Group(GossipSender, Mutex<GossipReceiver>);
-impl Group {
-    pub fn new(s: GossipSender, r: Mutex<GossipReceiver>) -> Self {
-        Self(s, r)
+impl From<iroh::endpoint::Connection> for Connection {
+    fn from(value: iroh::endpoint::Connection) -> Self {
+        Self(value)
     }
 }
+
+#[wasm_bindgen]
+pub struct Group(
+    async_channel::Sender<Bytes>,
+    async_channel::Receiver<iroh_gossip::api::Event>,
+);
 #[wasm_bindgen]
 impl Group {
     pub async fn next_event(&self) -> Result<Option<JsValue>, JsError> {
-        let Some(event) = self.1.lock().await.try_next().await? else {
-            return Ok(None);
-        };
-        Ok(Some(serde_wasm_bindgen::to_value(&event)?))
+        Ok(Some(serde_wasm_bindgen::to_value(&self.1.recv().await?)?))
     }
     pub async fn send(&self, message: String) -> Result<(), JsError> {
-        self.0.broadcast(message.into()).await?;
+        self.0.send(message.into()).await?;
         Ok(())
+    }
+}
+impl From<GossipTopic> for Group {
+    fn from(value: GossipTopic) -> Self {
+        let mut value = value.split();
+        let sender = async_channel::unbounded();
+        spawn_local(async move {
+            while let Ok(message) = sender.1.recv().await {
+                _ = value.0.broadcast(message).await;
+            }
+        });
+        let receiver = async_channel::unbounded();
+        spawn_local(async move {
+            while let Ok(Some(message)) = value.1.try_next().await {
+                _ = receiver.0.send(message).await;
+            }
+        });
+        Self(sender.0, receiver.1)
     }
 }

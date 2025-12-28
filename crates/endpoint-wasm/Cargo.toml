@@ -8,6 +8,7 @@ crate-type = ["cdylib"]
 
 [dependencies]
 person-protocol = { path = "../person-protocol" }
+
 wasm-bindgen = "0.2.106"
 wasm-bindgen-futures = "0.4.56"
 serde-wasm-bindgen = "0.6.5"
@@ -21,12 +22,10 @@ iroh-relay = { version = "0.95.1", default-features = false }
 iroh-gossip = { version = "0.95.0", default-features = false, features = [
     "net",
 ] }
+async-channel = "2.5.0"
 iroh-blobs = { version = "0.97.0", default-features = false }
-tokio = { version = "1.48.0", default-features = false, features = [
-    "parking_lot",
-    "sync",
-] }
 serde = { version = "1.0.228", features = ["derive"] }
 base64 = "0.22.1"
-serde_json = "1.0.147"
+serde_json = "1.0.148"
 futures-lite = "2.6.1"
+bytes = "1.11.0"

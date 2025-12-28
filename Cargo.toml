@@ -1,8 +1,3 @@
 [workspace]
 resolver = "3"
-members = [
-    "native",
-    "crates/endpoint-wasm",
-    "crates/person-protocol",
-    "crates/starlink-relay",
-]
+members = ["native", "cli/*", "crates/*"]

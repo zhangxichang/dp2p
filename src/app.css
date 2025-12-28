@@ -2,7 +2,7 @@
 @plugin "daisyui";
 
 @plugin "daisyui/theme" {
-    name: "starlink-light";
+    name: "light";
     default: false;
     prefersdark: false;
     color-scheme: "light";
@@ -26,7 +26,7 @@
     --color-warning-content: oklch(41% 0.112 45.904);
     --color-error: oklch(71% 0.194 13.428);
     --color-error-content: oklch(27% 0.105 12.094);
-    --radius-selector: 0.5rem;
+    --radius-selector: 1rem;
     --radius-field: 0.5rem;
     --radius-box: 1rem;
     --size-selector: 0.25rem;

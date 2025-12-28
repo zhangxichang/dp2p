@@ -13,7 +13,7 @@ export default function MenuBar() {
       <ul class="menu menu-horizontal">
         <li>
           <button
-            class="btn btn-sm"
+            class="btn btn-sm bg-base-100"
             onClick={() => {
               about_dialog?.showModal();
               set_lazy_about_modal_load(true);

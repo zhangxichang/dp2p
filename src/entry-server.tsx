@@ -4,7 +4,7 @@ import { createHandler, StartServer } from "@solidjs/start/server";
 export default createHandler(() => (
   <StartServer
     document={({ assets, scripts, children }) => (
-      <html data-theme="starlink-light">
+      <html data-theme="light">
         <head>
           <meta charset="UTF-8" />
           <meta

@@ -1,6 +1,7 @@
 use std::sync::Arc;
 
 use eyre::{Result, bail, eyre};
+use futures::channel::oneshot;
 use iroh::{
     Endpoint, EndpointId,
     endpoint::Connection,
@@ -8,7 +9,6 @@ use iroh::{
 };
 use rkyv::Archive;
 use strum::Display;
-use tokio::sync::{mpsc, oneshot};
 
 pub const ALPN: &[u8] = b"person/v1";
 
@@ -89,13 +89,13 @@ impl ChatRequest {
 pub struct PersonProtocol {
     endpoint: Endpoint,
     person: Arc<Person>,
-    event_sender: mpsc::UnboundedSender<Event>,
+    event_sender: async_channel::Sender<Event>,
 }
 impl PersonProtocol {
     pub fn new(
         endpoint: Endpoint,
         person: Person,
-        event_sender: mpsc::UnboundedSender<Event>,
+        event_sender: async_channel::Sender<Event>,
     ) -> Self {
         Self {
             endpoint,
@@ -117,10 +117,12 @@ impl PersonProtocol {
                     }
                     Request::Friend => {
                         let (sender, receiver) = oneshot::channel::<bool>();
-                        self.event_sender.send(Event::FriendRequest(FriendRequest {
-                            remote_id: connection.remote_id(),
-                            response_sender: sender,
-                        }))?;
+                        self.event_sender
+                            .send(Event::FriendRequest(FriendRequest {
+                                remote_id: connection.remote_id(),
+                                response_sender: sender,
+                            }))
+                            .await?;
                         let result = receiver.await?;
                         send.write_all(&rkyv::to_bytes::<rkyv::rancor::Error>(&Response::Friend(
                             result,
@@ -131,10 +133,12 @@ impl PersonProtocol {
                     }
                     Request::Chat => {
                         let (sender, receiver) = oneshot::channel::<bool>();
-                        self.event_sender.send(Event::ChatRequest(ChatRequest {
-                            response_sender: sender,
-                            connection,
-                        }))?;
+                        self.event_sender
+                            .send(Event::ChatRequest(ChatRequest {
+                                response_sender: sender,
+                                connection,
+                            }))
+                            .await?;
                         let result = receiver.await?;
                         send.write_all(&rkyv::to_bytes::<rkyv::rancor::Error>(&Response::Chat(
                             result,

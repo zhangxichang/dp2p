@@ -27,6 +27,7 @@ export class MainStore {
     return new MainStore(sqlite_module, endpoint_module, sqlite);
   }
   async cleanup() {
+    await this.sqlite.close();
     await this.sqlite_module.free();
   }
 }
