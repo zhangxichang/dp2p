@@ -1,4 +1,3 @@
-mod option_ext;
 mod router;
 
 pub use crate::router::router;

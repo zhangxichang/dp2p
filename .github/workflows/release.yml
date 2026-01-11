@@ -45,6 +45,7 @@ jobs:
     steps:
       - uses: actions/checkout@v6
       - uses: cargo-bins/cargo-binstall@main
+      - uses: astral-sh/setup-uv@v7
       - uses: oven-sh/setup-bun@v2
         with:
           bun-version: latest
@@ -52,10 +53,11 @@ jobs:
         run: |
           rustup target install wasm32-unknown-unknown
           cargo binstall wasm-pack
+          uv sync
           bun run build:deps
           bun install
           bun run generate:deps
-          bun scripts/generate_version.ts ${{needs.check-release.outputs.version}}
+          echo ${{needs.check-release.outputs.version}} > public/version
       - name: 构建
         run: bun run build
       - name: 发布
@@ -74,6 +76,7 @@ jobs:
     steps:
       - uses: actions/checkout@v6
       - uses: cargo-bins/cargo-binstall@main
+      - uses: astral-sh/setup-uv@v7
       - uses: oven-sh/setup-bun@v2
         with:
           bun-version: latest
@@ -81,10 +84,11 @@ jobs:
         run: |
           rustup target install wasm32-unknown-unknown
           cargo binstall wasm-pack
+          uv sync
           bun run build:deps
           bun install
           bun run generate:deps
-          bun scripts/generate_version.ts ${{needs.check-release.outputs.version}}
+          echo ${{needs.check-release.outputs.version}} > public/version
       - name: 构建
         run: bun tauri build
       - name: 处理构建产物

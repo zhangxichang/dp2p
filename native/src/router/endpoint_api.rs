@@ -1,10 +1,8 @@
-mod endpoint;
-
 use std::sync::Arc;
 
+use endpoint::Endpoint;
 use sharded_slab::Slab;
-
-use crate::{option_ext::OptionGet, router::endpoint_api::endpoint::Endpoint};
+use utils::option_ext::OptionGet;
 
 #[taurpc::procedures(path = "endpoint")]
 pub trait EndpointApi {

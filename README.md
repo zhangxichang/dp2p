@@ -2,53 +2,27 @@
 
 一个基于现代Web技术构建的跨平台网络聊天应用，既可直接作为Web应用使用，也可打包为原生桌面应用。
 
-![Starlink应用主界面截图](assets/promotion_image.png)
+![软件宣传图](assets/promotion_image.png)
 
 ## ✨ 主要特性
-
 - **跨平台体验** - 在多种设备和操作系统上提供一致、顺畅的使用体验
 - **开箱即用的Web应用** - 无需安装，直接通过浏览器访问 **[星链](https://starlink.zhangxichang.com)** 即可使用
 - **高性能Rust后端** - 应用核心（WebAssembly模块与原生后端）由Rust编写，兼顾高性能与内存安全
-
-## 📥 获取方式
-
-### 🌐 在线版
-
-直接访问 [starlink.zhangxichang.com](https://starlink.zhangxichang.com)，无需任何下载安装。
-
-### 💻 桌面版
-
-- **Windows用户** → 前往 [GitHub Releases](https://github.com/ZhangXiChang/starlink/releases) 下载最新版本
-- **Linux/macOS/移动端用户** → 目前推荐使用在线版本，原生应用正在规划中
-
+## ⬇️ 获取方式
+- **[GitHub Release](https://github.com/ZhangXiChang/starlink/releases)** - 主要发布渠道
+- **[Gitee Release](https://gitee.com/zhangxichang/starlink-release-latest/releases)** - 适合国内用户
 ## ⚠️ 使用须知
-
-**Starlink 致力于提供安全、合法的通信体验。请所有用户在使用前务必知悉以下条款：**
-
-1.  **合法用途** - 本软件**必须**用于合法、正当的交流目的
-2.  **严格禁止** - **严禁**用于任何形式的非法活动、骚扰、侵害隐私、传播恶意软件或违反 [可接受使用政策](docs/ACCEPTABLE_USE_POLICY.md) 的行为
-3.  **责任声明** - 本软件按 MIT 许可证 **"按原样"** 提供，维护者不承担因滥用导致的任何责任
-
-> **继续使用即表示您同意遵守上述条款及完整政策。**
-
-## 🛠️ 项目依赖
-
-在开始开发或构建前，请确保安装以下必要工具：
-
-- **[Rust](https://rust-lang.org)** - 系统编程语言和构建工具链
-- **[Bun](https://bun.com)** - JavaScript 运行时和包管理器
-- **[wasm-pack](https://drager.github.io/wasm-pack)** - Rust WebAssembly 打包和发布工具
-- **[wasm32-unknown-unknown](https://doc.rust-lang.org/beta/rustc/platform-support/wasm32-unknown-unknown.html)** - Rust WebAssembly 编译目标
-
+1. 本软件遵循 [MIT 许可证](LICENSE) 开源协议
+2. 商业使用需保留版权声明
+3. 禁止用于非法活动及危害网络安全的行为
+4. 作者不承担因使用本软件导致的直接或间接损失
+具体须知在[可接受使用策略](docs/ACCEPTABLE_USE_POLICY)
 ## 📚 文档
-
-- **[开发者指南](docs/DEVELOPER_GUIDE.md)** - 提供了开发和构建 Starlink 的指导
-
+- [项目架构设计](docs/arch/arch_zh)
+- [开发者指南](docs/DEVELOPER_GUIDE)
 ## 🤝 参与贡献
-
-我们欢迎社区贡献！请先阅读 [贡献指南](CONTRIBUTING.md) 了解流程和规范。
-
----
-
-**反馈与建议**  
-如有问题或想法，请通过 [GitHub Issues](https://github.com/ZhangXiChang/starlink/issues) 与我们交流。
+我们欢迎任何形式的贡献！详细贡献流程请查阅 [贡献指南](CONTRIBUTING)
+## 💬 反馈与建议
+遇到问题或有改进想法？我们期待您的声音：
+- 🐞 提交 Bug：[创建 Issue](https://github.com/ZhangXiChang/starlink/issues/new?template=你遇到了bug-.md)
+- 💡 提出新功能：[功能请求模板](https://github.com/ZhangXiChang/starlink/issues/new?template=有希望改进的地方-.md)

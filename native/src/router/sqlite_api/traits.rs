@@ -1,6 +1,5 @@
 use eyre::{Result, bail};
-
-use crate::option_ext::OptionGet;
+use utils::option_ext::OptionGet;
 
 pub trait IntoSQLiteValue {
     fn into_sqlite_value(self) -> Result<tokio_rusqlite::types::Value>;

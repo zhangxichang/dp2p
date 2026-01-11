@@ -4,21 +4,17 @@
     "type": "split",
     "children": [
       {
-        "id": "581c9ea050513ffb",
+        "id": "a89e2ab153d8f39f",
         "type": "tabs",
         "children": [
           {
-            "id": "8166148b3326add9",
+            "id": "e4c54f5cbf34b733",
             "type": "leaf",
             "state": {
-              "type": "markdown",
-              "state": {
-                "file": "README.md",
-                "mode": "source",
-                "source": false
-              },
+              "type": "empty",
+              "state": {},
               "icon": "lucide-file",
-              "title": "README"
+              "title": "新标签页"
             }
           }
         ]
@@ -193,17 +189,20 @@
       "obsidian-excalidraw-plugin:新建绘图文件": false,
       "obsidian42-brat:BRAT": false,
       "jupyter:Start Jupyter Server": false,
-      "jupyter:Create Jupyter Notebook": false
+      "jupyter:Create Jupyter Notebook": false,
+      "audio-recorder:开始/结束录音": false
     }
   },
-  "active": "8166148b3326add9",
+  "active": "ece9e16ceb22819f",
   "lastOpenFiles": [
-    "docs/arch/arch_zh.md",
-    "node_modules/ms/license.md",
-    "docs/ACCEPTABLE_USE_POLICY.md",
     "docs/DEVELOPER_GUIDE.md",
     "README.md",
     "CONTRIBUTING.md",
+    "docs/ACCEPTABLE_USE_POLICY.md",
+    "node_modules/ms/license.md",
+    "().md",
+    "assets/promotion_image.png",
+    "docs/arch/arch_zh.md",
     "docs/arch",
     "ACCEPTABLE_USE_POLICY.md",
     "项目架构.md",

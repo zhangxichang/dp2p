@@ -9,7 +9,10 @@ use iroh::{
     protocol::Router,
 };
 use iroh_blobs::{BlobsProtocol, api::Store};
-use iroh_gossip::{Gossip, TopicId};
+use iroh_gossip::{
+    Gossip, TopicId,
+    api::{GossipReceiver, GossipSender},
+};
 use iroh_relay::RelayQuicConfig;
 use parking_lot::Mutex;
 use person_protocol::{Person, PersonProtocol};
@@ -28,9 +31,10 @@ pub struct Endpoint {
     router: Router,
     person_protocol: PersonProtocol,
     gossip_protocol: Gossip,
-    blobs_protocol: BlobsProtocol,
+    _blobs_protocol: BlobsProtocol,
     connection_pool: Arc<Slab<Connection>>,
     person_protocol_event: Arc<Mutex<Option<person_protocol::Event>>>,
+    group_pool: Arc<Slab<(GossipSender, GossipReceiver)>>,
 }
 impl Endpoint {
     pub async fn new(secret_key: Vec<u8>, person: Person) -> Result<Self> {
@@ -88,9 +92,10 @@ impl Endpoint {
             router,
             person_protocol,
             gossip_protocol,
-            blobs_protocol,
+            _blobs_protocol: blobs_protocol,
             connection_pool: Default::default(),
             person_protocol_event: Default::default(),
+            group_pool: Default::default(),
         })
     }
     pub async fn close(self) -> Result<()> {
@@ -116,7 +121,12 @@ impl Endpoint {
         Ok(self.person_protocol.request_friend(id.parse()?).await?)
     }
     pub async fn request_chat(&self, id: String) -> Result<Option<usize>> {
-        Ok(self.person_protocol.request_chat(id.parse()?).await?)
+        Ok(self
+            .person_protocol
+            .request_chat(id.parse()?)
+            .await?
+            .map(|v| self.connection_pool.insert(v).get_move())
+            .transpose()?)
     }
     pub fn conn_type(&self, id: String) -> Result<Option<String>> {
         Ok(self
@@ -142,9 +152,36 @@ impl Endpoint {
     }
     pub async fn subscribe_group(&self, ticket: String) -> Result<usize> {
         let ticket = serde_json::from_slice::<Ticket>(&BASE64_STANDARD.decode(ticket)?)?;
-        Ok(self
+        let group = self
             .gossip_protocol
             .subscribe(ticket.id, ticket.bootstrap)
-            .await?)
+            .await?
+            .split();
+        Ok(self.group_pool.insert(group).get_move()?)
     }
+}
+
+pub fn generate_secret_key() -> Vec<u8> {
+    iroh::SecretKey::generate(&mut rand::rng())
+        .to_bytes()
+        .to_vec()
+}
+pub fn get_secret_key_id(secret_key: Vec<u8>) -> Result<String> {
+    Ok(
+        iroh::SecretKey::from_bytes(secret_key.as_slice().try_into()?)
+            .public()
+            .to_string(),
+    )
+}
+pub fn generate_group_id() -> String {
+    TopicId::from_bytes(rand::random()).to_string()
+}
+pub fn generate_ticket(group_id: String, bootstrap: Vec<String>) -> Result<String> {
+    Ok(BASE64_STANDARD.encode(serde_json::to_vec(&Ticket {
+        id: group_id.parse()?,
+        bootstrap: bootstrap
+            .into_iter()
+            .map(|v| v.parse())
+            .collect::<Result<_, _>>()?,
+    })?))
 }

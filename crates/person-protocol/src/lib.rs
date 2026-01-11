@@ -8,6 +8,7 @@ use iroh::{
     protocol::{AcceptError, ProtocolHandler},
 };
 use rkyv::Archive;
+use strum::Display;
 
 pub const ALPN: &[u8] = b"person/v1";
 
@@ -32,6 +33,12 @@ pub struct Person {
     pub name: String,
     pub avatar: Option<Vec<u8>>,
     pub bio: String,
+}
+
+#[derive(Display)]
+pub enum Event {
+    FriendRequest(FriendRequest),
+    ChatRequest(ChatRequest),
 }
 
 pub struct FriendRequest {

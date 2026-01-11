@@ -4,14 +4,14 @@ mod utils;
 
 use std::sync::Arc;
 
+use ::utils::option_ext::OptionGet;
 use eyre::eyre;
 use sharded_slab::Slab;
 use tauri::ipc::Channel;
 use tokio_rusqlite::{hooks::Action, params_from_iter};
 
-use crate::{
-    option_ext::OptionGet,
-    router::sqlite_api::{traits::IntoJSONValue, types::SQLiteUpdateEvent, utils::json_sql_params},
+use crate::router::sqlite_api::{
+    traits::IntoJSONValue, types::SQLiteUpdateEvent, utils::json_sql_params,
 };
 
 #[taurpc::procedures(path = "sqlite")]

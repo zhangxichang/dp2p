@@ -1,24 +1,9 @@
 mod traits;
-mod types;
-mod utils;
 
-use base64::{Engine, prelude::BASE64_STANDARD};
-use endpoint::Ticket;
 use eyre::Result;
-use iroh::{
-    RelayConfig, RelayMode, SecretKey, Watcher, discovery::pkarr::PkarrPublisher,
-    endpoint::ConnectionType, protocol::Router,
-};
-use iroh_blobs::{BlobsProtocol, store::mem::MemStore};
-use iroh_gossip::Gossip;
-use iroh_relay::RelayQuicConfig;
-use person_protocol::PersonProtocol;
-use wasm_bindgen::{JsError, prelude::wasm_bindgen};
+use wasm_bindgen::{JsError, JsValue, prelude::wasm_bindgen};
 
-use crate::{
-    traits::JsErrorExt,
-    types::{Connection, Group, Person, PersonProtocolEvent},
-};
+use crate::traits::JsErrorExt;
 
 #[wasm_bindgen(start)]
 fn start() {
@@ -27,109 +12,65 @@ fn start() {
 }
 
 #[wasm_bindgen]
-pub struct Endpoint {
-    router: Router,
-    person_protocol: PersonProtocol,
-    person_protocol_event_receiver: async_channel::Receiver<person_protocol::Event>,
-    gossip_protocol: Gossip,
-    _blobs_protocol: BlobsProtocol,
-}
+pub struct Endpoint(endpoint::Endpoint);
 #[wasm_bindgen]
 impl Endpoint {
-    pub async fn new(secret_key: Vec<u8>, person: Person) -> Result<Self, JsError> {
-        let (person_protocol_event_sender, person_protocol_event_receiver) =
-            async_channel::unbounded();
-        let relay_map = RelayMode::Default.relay_map();
-        relay_map.insert(
-            "https://dev.zhangxichang.com:10281".parse()?,
-            RelayConfig {
-                url: "https://dev.zhangxichang.com:10281".parse()?,
-                quic: Some(RelayQuicConfig { port: 10282 }),
-            }
-            .into(),
-        );
-        let endpoint = iroh::Endpoint::empty_builder(RelayMode::Custom(relay_map))
-            .discovery(PkarrPublisher::n0_dns())
-            .secret_key(SecretKey::from_bytes(secret_key.as_slice().try_into()?))
-            .bind()
-            .await?;
-        let person_protocol = PersonProtocol::new(
-            endpoint.clone(),
-            person.into(),
-            person_protocol_event_sender,
-        );
-        let gossip_protocol = Gossip::builder().spawn(endpoint.clone());
-        let blobs_protocol = BlobsProtocol::new(&MemStore::new(), None);
-        let router = Router::builder(endpoint)
-            .accept(person_protocol::ALPN, person_protocol.clone())
-            .accept(iroh_gossip::ALPN, gossip_protocol.clone())
-            .accept(iroh_blobs::ALPN, blobs_protocol.clone())
-            .spawn();
-        Ok(Self {
-            router,
-            person_protocol,
-            person_protocol_event_receiver,
-            gossip_protocol,
-            _blobs_protocol: blobs_protocol,
-        })
+    pub async fn new(secret_key: Vec<u8>, person: JsValue) -> Result<Self, JsError> {
+        Ok(Self(
+            endpoint::Endpoint::new(secret_key, serde_wasm_bindgen::from_value(person)?)
+                .await
+                .m()?,
+        ))
     }
     pub async fn close(self) -> Result<(), JsError> {
-        self.router.shutdown().await?;
+        self.0.close().await.m()?;
         Ok(())
     }
     pub fn id(&self) -> String {
-        self.router.endpoint().id().to_string()
+        self.0.id()
     }
-    pub async fn person_protocol_event_next(&self) -> Result<PersonProtocolEvent, JsError> {
-        Ok(self.person_protocol_event_receiver.recv().await?.into())
+    pub async fn person_protocol_next_event(&self) -> Result<(), JsError> {
+        self.0.person_protocol_next_event().await.m()?;
+        Ok(())
     }
-    pub async fn request_person(&self, id: String) -> Result<Person, JsError> {
-        Ok(self
-            .person_protocol
-            .request_person(id.parse()?)
-            .await
-            .m()?
-            .into())
+    pub async fn person_protocol_event_type(&self) -> Result<String, JsError> {
+        Ok(self.0.person_protocol_event_type().await.m()?)
+    }
+    pub async fn request_person(&self, id: String) -> Result<JsValue, JsError> {
+        Ok(serde_wasm_bindgen::to_value(
+            &self.0.request_person(id).await.m()?,
+        )?)
     }
     pub async fn request_friend(&self, id: String) -> Result<bool, JsError> {
-        Ok(self.person_protocol.request_friend(id.parse()?).await.m()?)
+        Ok(self.0.request_friend(id).await.m()?)
     }
-    pub async fn request_chat(&self, id: String) -> Result<Option<Connection>, JsError> {
-        Ok(self
-            .person_protocol
-            .request_chat(id.parse()?)
-            .await
-            .m()?
-            .map(|v| v.into()))
+    pub async fn request_chat(&self, id: String) -> Result<Option<usize>, JsError> {
+        Ok(self.0.request_chat(id).await.m()?)
     }
     pub fn conn_type(&self, id: String) -> Result<Option<String>, JsError> {
-        Ok(self
-            .router
-            .endpoint()
-            .conn_type(id.parse()?)
-            .map(|mut value| {
-                match value.get() {
-                    ConnectionType::Direct(_) => "Direct",
-                    ConnectionType::Relay(_) => "Relay",
-                    ConnectionType::Mixed(_, _) => "Mixed",
-                    ConnectionType::None => "None",
-                }
-                .to_string()
-            }))
+        Ok(self.0.conn_type(id).m()?)
     }
     pub fn latency(&self, id: String) -> Result<Option<usize>, JsError> {
-        Ok(self
-            .router
-            .endpoint()
-            .latency(id.parse()?)
-            .map(|v| v.as_millis() as _))
+        Ok(self.0.latency(id).m()?)
     }
-    pub async fn subscribe_group(&self, ticket: String) -> Result<Group, JsError> {
-        let ticket = serde_json::from_slice::<Ticket>(&BASE64_STANDARD.decode(ticket)?)?;
-        Ok(self
-            .gossip_protocol
-            .subscribe(ticket.id, ticket.bootstrap)
-            .await?
-            .into())
+    pub async fn subscribe_group(&self, ticket: String) -> Result<usize, JsError> {
+        Ok(self.0.subscribe_group(ticket).await.m()?)
     }
+}
+
+#[wasm_bindgen]
+pub fn generate_secret_key() -> Vec<u8> {
+    endpoint::generate_secret_key()
+}
+#[wasm_bindgen]
+pub fn get_secret_key_id(secret_key: Vec<u8>) -> Result<String, JsError> {
+    endpoint::get_secret_key_id(secret_key).m()
+}
+#[wasm_bindgen]
+pub fn generate_group_id() -> String {
+    endpoint::generate_group_id()
+}
+#[wasm_bindgen]
+pub fn generate_ticket(group_id: String, bootstrap: Vec<String>) -> Result<String, JsError> {
+    endpoint::generate_ticket(group_id, bootstrap).m()
 }
