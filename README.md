@@ -11,12 +11,6 @@
 ## ⬇️ 获取方式
 - **[GitHub Release](https://github.com/ZhangXiChang/starlink/releases)** - 主要发布渠道
 - **[Gitee Release](https://gitee.com/zhangxichang/starlink-release-latest/releases)** - 适合国内用户
-## ⚠️ 使用须知
-1. 本软件遵循 [MIT 许可证](LICENSE) 开源协议
-2. 商业使用需保留版权声明
-3. 禁止用于非法活动及危害网络安全的行为
-4. 作者不承担因使用本软件导致的直接或间接损失
-具体须知在[可接受使用策略](docs/ACCEPTABLE_USE_POLICY)
 ## 📚 文档
 - [项目架构设计](docs/arch/arch_zh)
 - [开发者指南](docs/DEVELOPER_GUIDE)

@@ -4,17 +4,21 @@
     "type": "split",
     "children": [
       {
-        "id": "a89e2ab153d8f39f",
+        "id": "917cec1802af73b7",
         "type": "tabs",
         "children": [
           {
-            "id": "e4c54f5cbf34b733",
+            "id": "8ca55b2eff5abee1",
             "type": "leaf",
             "state": {
-              "type": "empty",
-              "state": {},
+              "type": "markdown",
+              "state": {
+                "file": "README.md",
+                "mode": "preview",
+                "source": false
+              },
               "icon": "lucide-file",
-              "title": "新标签页"
+              "title": "README"
             }
           }
         ]
@@ -190,19 +194,20 @@
       "obsidian42-brat:BRAT": false,
       "jupyter:Start Jupyter Server": false,
       "jupyter:Create Jupyter Notebook": false,
-      "audio-recorder:开始/结束录音": false
+      "audio-recorder:开始/结束录音": false,
+      "homepage:Open homepage": false
     }
   },
-  "active": "ece9e16ceb22819f",
+  "active": "8ca55b2eff5abee1",
   "lastOpenFiles": [
     "docs/DEVELOPER_GUIDE.md",
+    "docs/arch/arch_zh.md",
     "README.md",
     "CONTRIBUTING.md",
     "docs/ACCEPTABLE_USE_POLICY.md",
     "node_modules/ms/license.md",
     "().md",
     "assets/promotion_image.png",
-    "docs/arch/arch_zh.md",
     "docs/arch",
     "ACCEPTABLE_USE_POLICY.md",
     "项目架构.md",
