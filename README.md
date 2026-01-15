@@ -12,10 +12,10 @@
 - **[GitHub Release](https://github.com/ZhangXiChang/starlink/releases)** - 主要发布渠道
 - **[Gitee Release](https://gitee.com/zhangxichang/starlink-release-latest/releases)** - 适合国内用户
 ## 📚 文档
-- [项目架构设计](docs/arch/arch_zh)
-- [开发者指南](docs/DEVELOPER_GUIDE)
+- [项目架构设计](docs/arch/arch_zh.md)
+- [开发者指南](docs/DEVELOPER_GUIDE.md)
 ## 🤝 参与贡献
-我们欢迎任何形式的贡献！详细贡献流程请查阅 [贡献指南](docs/CONTRIBUTING)
+我们欢迎任何形式的贡献！详细贡献流程请查阅 [贡献指南](docs/CONTRIBUTING.md)
 ## 💬 反馈与建议
 遇到问题或有改进想法？我们期待您的声音：
 - 🐞 提交 Bug：[创建 Issue](https://github.com/ZhangXiChang/starlink/issues/new?template=你遇到了bug-.md)
