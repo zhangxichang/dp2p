@@ -9,11 +9,11 @@ impl IntoSQLiteValue for serde_json::Value {
         match self {
             serde_json::Value::Null => Ok(tokio_rusqlite::types::Value::Null),
             serde_json::Value::Bool(value) => Ok(value.into()),
-            serde_json::Value::Number(value) => Ok(value.as_i64().get_move()?.into()),
+            serde_json::Value::Number(value) => Ok(value.as_i64().get()?.into()),
             serde_json::Value::String(value) => Ok(value.into()),
             serde_json::Value::Array(value) => Ok(value
                 .into_iter()
-                .map(|v| Ok(v.as_u64().get_move()? as _))
+                .map(|v| Ok(v.as_u64().get()? as _))
                 .collect::<Result<Vec<u8>>>()?
                 .into()),
             serde_json::Value::Object(_) => bail!("目标不能为对象"),
