@@ -1,46 +1,46 @@
-# 贡献指南
+# Contributing Guide
 
-感谢你花时间考虑为 Starlink 做贡献！本指南将帮助你了解如何有效地报告问题、提交代码或文档改进。
+Thank you for taking the time to consider contributing to Starlink! This guide will help you understand how to effectively report issues, submit code, or propose documentation improvements.
 
-## 开始之前
+## Before You Start
 
-- **查看现有议题**：在创建新议题（Issue）或拉取请求（Pull Request）前，请先搜索[议题列表](https://github.com/ZhangXiChang/starlink/issues)，确认你的想法是否已被讨论。
-- **开始编码前**：无论是修复你发现的 Bug 还是添加新功能，都**建议先创建一个 Issue 进行讨论**。这有助于确保你的工作符合项目目标，并避免重复工作。如果是解决现有的 Issue 那么你就可以不用创建 Issue
+- **Check Existing Issues**: Before creating a new issue or pull request, please search the [issue list](https://github.com/ZhangXiChang/starlink/issues) to confirm if your idea has already been discussed.
+- **Before Coding**: Whether you're fixing a bug you found or adding a new feature, **it is recommended to create an issue for discussion first**. This helps ensure your work aligns with the project's goals and avoids duplicate efforts. If you're addressing an existing issue, creating a new one may not be necessary.
 
-## 开发流程
+## Development Workflow
 
-1.  **Fork仓库**：在GitHub上Fork本仓库到你的账户。
-2.  **克隆仓库**：将你Fork后的仓库克隆到本地。
+1.  **Fork the Repository**: Fork this repository to your own GitHub account.
+2.  **Clone the Repository**: Clone your forked repository to your local machine.
     ```bash
-    git clone https://github.com/用户名/仓库名
+    git clone https://github.com/your-username/starlink.git
     cd starlink
     ```
-3.  **创建分支**：从最新的 `main` 分支创建一个新分支。
+3.  **Create a Branch**: Create a new branch from the latest `main` branch.
     ```bash
-    git checkout -b <分支名>
+    git checkout -b <branch-name>
     ```
-4.  **进行修改并提交**：在本地进行你的修改。
-    - **遵循代码风格**：请遵循项目中现有的代码风格和惯例，推荐使用 [Zed](https://zed.dev/) 编辑器以获得最佳体验。
-    - **进行测试**：如果你添加了代码，请进行相应的测试。
-    - **提交信息**：请撰写清晰、具体的提交信息。
-5.  **推送分支**：将你的分支推送到你的Fork仓库。
+4.  **Make Changes and Commit**: Implement your changes locally.
+    - **Follow Code Style**: Please adhere to the existing code style and conventions in the project. Using the [Zed](https://zed.dev/) editor is recommended for the best experience.
+    - **Testing**: If you are adding code, please include corresponding tests.
+    - **Commit Messages**: Please write clear and descriptive commit messages.
+5.  **Push Your Branch**: Push your branch to your forked repository.
     ```bash
-    git push origin <分支名>
+    git push origin <branch-name>
     ```
 
-## 提交Pull Request
+## Submitting a Pull Request
 
-1.  前往GitHub上你的Fork仓库，点击 **“Compare & pull request”**。
-2.  **填写PR模板**：请清晰地描述你的更改内容、原因以及相关Issue编号（如有）。
-3.  **等待审查**：项目维护者会审查你的PR，并可能提出修改意见。这是一个正常的协作过程，请积极参与讨论。
+1.  Go to your forked repository on GitHub and click **"Compare & pull request"**.
+2.  **Fill Out the PR Template**: Clearly describe the changes you made, the reasons for them, and the related issue number (if applicable).
+3.  **Await Review**: Project maintainers will review your PR and may provide feedback. This is a normal part of the collaborative process; please engage actively in the discussion.
 
-## 代码审查标准
+## Code Review Standards
 
-- 代码功能正确且符合设计。
-- 变更范围清晰，专注于解决一个问题。
-- 进行了适当的测试（如适用）。
-- 遵循了项目的编码规范。
+- The code functions correctly and meets design requirements.
+- Changes are clear in scope and focused on solving a single problem.
+- Appropriate testing has been conducted (where applicable).
+- Project coding conventions have been followed.
 
 ---
 
-再次感谢你的贡献！你的工作使这个项目变得更好。
+Thank you again for your contributions! Your work makes this project better.
