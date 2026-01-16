@@ -1,2 +1,0 @@
-c.FileContentsManager.checkpoints_kwargs = {'root_dir': r'C:/Users/yxrbe/Documents/note/.obsidian/plugins/jupyter/.ipynb_checkpoints/'}
-print("[Jupyter for Obsidian] Custom configuration of Jupyter for Obsidian loaded successfully.")

@@ -152,7 +152,7 @@
       }
     }
   },
-  "previousRelease": "2.19.0",
+  "previousRelease": "2.19.1",
   "showReleaseNotes": true,
   "compareManifestToPluginVersion": true,
   "showNewVersionNotification": true,

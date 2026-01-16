@@ -1,6 +1,10 @@
 {
   "private": true,
   "type": "module",
+  "stackblitz": {
+    "installDependencies": false,
+    "startCommand": false
+  },
   "scripts": {
     "build:deps": "bun run build:endpoint",
     "build:endpoint": "wasm-pack build wasm/endpoint --target web --release",
@@ -15,10 +19,6 @@
     "build:native": "vinxi build --config native.config.ts && bun run check",
     "preview": "wrangler dev",
     "deploy": "wrangler deploy"
-  },
-  "stackblitz": {
-    "installDependencies": false,
-    "startCommand": false
   },
   "devDependencies": {
     "@eslint/js": "^9.39.2",
