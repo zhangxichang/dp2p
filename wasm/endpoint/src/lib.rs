@@ -1,9 +1,9 @@
-mod traits;
+mod error;
 
 use eyre::Result;
 use wasm_bindgen::{JsError, JsValue, prelude::wasm_bindgen};
 
-use crate::traits::JsErrorExt;
+use crate::error::MapJsError;
 
 #[wasm_bindgen(start)]
 fn start() {
@@ -19,42 +19,43 @@ impl Endpoint {
         Ok(Self(
             endpoint::Endpoint::new(secret_key, serde_wasm_bindgen::from_value(person)?)
                 .await
-                .m()?,
+                .mje()?,
         ))
     }
     pub async fn close(self) -> Result<(), JsError> {
-        self.0.close().await.m()?;
+        self.0.close().await.mje()?;
         Ok(())
     }
     pub fn id(&self) -> String {
         self.0.id()
     }
-    pub async fn person_protocol_next_event(&self) -> Result<(), JsError> {
-        self.0.person_protocol_next_event().await.m()?;
-        Ok(())
+    pub async fn person_protocol_next_event(&self) -> Result<String, JsError> {
+        self.0.person_protocol_next_event().await.mje()
     }
-    pub async fn person_protocol_event_type(&self) -> Result<String, JsError> {
-        Ok(self.0.person_protocol_event_type().await.m()?)
+    pub fn person_protocol_event(&self, method: String) -> Result<JsValue, JsError> {
+        Ok(serde_wasm_bindgen::to_value(
+            &self.0.person_protocol_event(method).mje()?,
+        )?)
     }
     pub async fn request_person(&self, id: String) -> Result<JsValue, JsError> {
         Ok(serde_wasm_bindgen::to_value(
-            &self.0.request_person(id).await.m()?,
+            &self.0.request_person(id).await.mje()?,
         )?)
     }
     pub async fn request_friend(&self, id: String) -> Result<bool, JsError> {
-        Ok(self.0.request_friend(id).await.m()?)
+        self.0.request_friend(id).await.mje()
     }
     pub async fn request_chat(&self, id: String) -> Result<Option<usize>, JsError> {
-        Ok(self.0.request_chat(id).await.m()?)
+        self.0.request_chat(id).await.mje()
     }
     pub fn conn_type(&self, id: String) -> Result<Option<String>, JsError> {
-        Ok(self.0.conn_type(id).m()?)
+        self.0.conn_type(id).mje()
     }
     pub fn latency(&self, id: String) -> Result<Option<usize>, JsError> {
-        Ok(self.0.latency(id).m()?)
+        self.0.latency(id).mje()
     }
     pub async fn subscribe_group(&self, ticket: String) -> Result<usize, JsError> {
-        Ok(self.0.subscribe_group(ticket).await.m()?)
+        self.0.subscribe_group(ticket).await.mje()
     }
 }
 
@@ -64,7 +65,7 @@ pub fn generate_secret_key() -> Vec<u8> {
 }
 #[wasm_bindgen]
 pub fn get_secret_key_id(secret_key: Vec<u8>) -> Result<String, JsError> {
-    endpoint::get_secret_key_id(secret_key).m()
+    endpoint::get_secret_key_id(secret_key).mje()
 }
 #[wasm_bindgen]
 pub fn generate_group_id() -> String {
@@ -72,5 +73,5 @@ pub fn generate_group_id() -> String {
 }
 #[wasm_bindgen]
 pub fn generate_ticket(group_id: String, bootstrap: Vec<String>) -> Result<String, JsError> {
-    endpoint::generate_ticket(group_id, bootstrap).m()
+    endpoint::generate_ticket(group_id, bootstrap).mje()
 }

@@ -1,5 +1,6 @@
 mod api;
 mod endpoint_api;
+mod error;
 mod sqlite_api;
 
 use specta_typescript::BigIntExportBehavior;

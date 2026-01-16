@@ -1,7 +1,7 @@
 use std::sync::Arc;
 
 use base64::{Engine, prelude::BASE64_STANDARD};
-use eyre::{Result, eyre};
+use eyre::Result;
 use iroh::{
     EndpointId, RelayConfig, RelayMode, SecretKey, Watcher,
     discovery::pkarr::PkarrPublisher,
@@ -47,6 +47,7 @@ impl Endpoint {
             }
             .into(),
         );
+        #[allow(unused_mut)]
         let mut endpoint_builder = iroh::Endpoint::empty_builder(RelayMode::Custom(relay_map))
             .discovery(PkarrPublisher::n0_dns());
         #[cfg(not(target_family = "wasm"))]
@@ -69,6 +70,7 @@ impl Endpoint {
         let store: Store;
         #[cfg(not(target_family = "wasm"))]
         {
+            use eyre::eyre;
             use iroh_blobs::store::fs::FsStore;
 
             store = FsStore::load("store")
@@ -105,14 +107,34 @@ impl Endpoint {
     pub fn id(&self) -> String {
         self.router.endpoint().id().to_string()
     }
-    pub async fn person_protocol_next_event(&self) -> Result<()> {
-        self.person_protocol_event
-            .lock()
-            .replace(self.person_protocol.next_event().await?);
-        Ok(())
+    pub async fn person_protocol_next_event(&self) -> Result<String> {
+        let event = self.person_protocol.next_event().await?;
+        let event_type = event.to_string();
+        self.person_protocol_event.lock().replace(event);
+        Ok(event_type)
     }
-    pub async fn person_protocol_event_type(&self) -> Result<String> {
-        Ok(self.person_protocol_event.lock().get()?.to_string())
+    pub fn person_protocol_event(&self, method: String) -> Result<serde_json::Value> {
+        match self.person_protocol_event.lock().take().get()? {
+            person_protocol::Event::FriendRequest(friend_request) => match method.as_ref() {
+                "remote_id" => return Ok(friend_request.remote_id().to_string().into()),
+                "accept" => friend_request.accept()?,
+                "reject" => friend_request.reject()?,
+                _ => (),
+            },
+            person_protocol::Event::ChatRequest(chat_request) => match method.as_ref() {
+                "remote_id" => return Ok(chat_request.remote_id().to_string().into()),
+                "accept" => {
+                    return Ok(self
+                        .connection_pool
+                        .insert(chat_request.accept()?)
+                        .get()?
+                        .into());
+                }
+                "reject" => chat_request.reject()?,
+                _ => (),
+            },
+        }
+        Ok(().into())
     }
     pub async fn request_person(&self, id: String) -> Result<Person> {
         Ok(self.person_protocol.request_person(id.parse()?).await?)
@@ -125,7 +147,7 @@ impl Endpoint {
             .person_protocol
             .request_chat(id.parse()?)
             .await?
-            .map(|v| self.connection_pool.insert(v).get_move())
+            .map(|v| self.connection_pool.insert(v).get())
             .transpose()?)
     }
     pub fn conn_type(&self, id: String) -> Result<Option<String>> {
@@ -157,7 +179,7 @@ impl Endpoint {
             .subscribe(ticket.id, ticket.bootstrap)
             .await?
             .split();
-        Ok(self.group_pool.insert(group).get_move()?)
+        Ok(self.group_pool.insert(group).get()?)
     }
 }
 

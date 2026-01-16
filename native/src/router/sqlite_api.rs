@@ -10,22 +10,27 @@ use sharded_slab::Slab;
 use tauri::ipc::Channel;
 use tokio_rusqlite::{hooks::Action, params_from_iter};
 
-use crate::router::sqlite_api::{
-    traits::IntoJSONValue, types::SQLiteUpdateEvent, utils::json_sql_params,
+use crate::router::{
+    error::MapStringError,
+    sqlite_api::{traits::IntoJSONValue, types::SQLiteUpdateEvent, utils::json_sql_params},
 };
 
 #[taurpc::procedures(path = "sqlite")]
 pub trait SQLiteApi {
     async fn open_db(path: String) -> Result<usize, String>;
-    async fn close_db(id: usize) -> Result<(), String>;
-    async fn execute_sql(id: usize, sql: String) -> Result<(), String>;
-    async fn execute(id: usize, sql: String, params: Vec<serde_json::Value>) -> Result<(), String>;
+    async fn close_db(handle: usize) -> Result<(), String>;
+    async fn execute_sql(handle: usize, sql: String) -> Result<(), String>;
+    async fn execute(
+        handle: usize,
+        sql: String,
+        params: Vec<serde_json::Value>,
+    ) -> Result<(), String>;
     async fn query(
-        id: usize,
+        handle: usize,
         sql: String,
         params: Vec<serde_json::Value>,
     ) -> Result<Vec<serde_json::Value>, String>;
-    async fn on_update(id: usize, channel: Channel<SQLiteUpdateEvent>) -> Result<(), String>;
+    async fn on_update(handle: usize, channel: Channel<SQLiteUpdateEvent>) -> Result<(), String>;
 }
 
 #[derive(Clone, Default)]
@@ -39,27 +44,27 @@ impl SQLiteApi for SQLiteApiImpl {
             eyre::Ok(
                 self.connection_pool
                     .insert(tokio_rusqlite::Connection::open(path).await?)
-                    .get_move()?,
+                    .get()?,
             )
         }
         .await
-        .map_err(|err| err.to_string())
+        .mse()
     }
-    async fn close_db(self, id: usize) -> Result<(), String> {
+    async fn close_db(self, handle: usize) -> Result<(), String> {
         async {
-            if let Some(connection) = self.connection_pool.take(id) {
+            if let Some(connection) = self.connection_pool.take(handle) {
                 connection.close().await?;
             }
             eyre::Ok(())
         }
         .await
-        .map_err(|err| err.to_string())
+        .mse()
     }
-    async fn execute_sql(self, id: usize, sql: String) -> Result<(), String> {
+    async fn execute_sql(self, handle: usize, sql: String) -> Result<(), String> {
         async {
             self.connection_pool
-                .get_owned(id)
-                .get_move()?
+                .get_owned(handle)
+                .get()?
                 .call(move |connection| {
                     connection.execute_batch(&sql)?;
                     eyre::Ok(())
@@ -69,18 +74,18 @@ impl SQLiteApi for SQLiteApiImpl {
             eyre::Ok(())
         }
         .await
-        .map_err(|err| err.to_string())
+        .mse()
     }
     async fn execute(
         self,
-        id: usize,
+        handle: usize,
         sql: String,
         params: Vec<serde_json::Value>,
     ) -> Result<(), String> {
         async {
             self.connection_pool
-                .get_owned(id)
-                .get_move()?
+                .get_owned(handle)
+                .get()?
                 .call(move |connection| {
                     connection.execute(&sql, params_from_iter(json_sql_params(params)?))?;
                     eyre::Ok(())
@@ -90,19 +95,19 @@ impl SQLiteApi for SQLiteApiImpl {
             eyre::Ok(())
         }
         .await
-        .map_err(|err| err.to_string())
+        .mse()
     }
     async fn query(
         self,
-        id: usize,
+        handle: usize,
         sql: String,
         params: Vec<serde_json::Value>,
     ) -> Result<Vec<serde_json::Value>, String> {
         async {
             eyre::Ok(
                 self.connection_pool
-                    .get_owned(id)
-                    .get_move()?
+                    .get_owned(handle)
+                    .get()?
                     .call(move |connection| {
                         let mut statement = connection.prepare(&sql)?;
                         let column_names = statement
@@ -130,13 +135,17 @@ impl SQLiteApi for SQLiteApiImpl {
             )
         }
         .await
-        .map_err(|err| err.to_string())
+        .mse()
     }
-    async fn on_update(self, id: usize, channel: Channel<SQLiteUpdateEvent>) -> Result<(), String> {
+    async fn on_update(
+        self,
+        handle: usize,
+        channel: Channel<SQLiteUpdateEvent>,
+    ) -> Result<(), String> {
         async {
             self.connection_pool
-                .get_owned(id)
-                .get_move()?
+                .get_owned(handle)
+                .get()?
                 .call(move |connection| {
                     connection.update_hook(Some(
                         move |action: Action, db_name: &str, table_name: &str, row_id| {
@@ -162,6 +171,6 @@ impl SQLiteApi for SQLiteApiImpl {
             eyre::Ok(())
         }
         .await
-        .map_err(|err| err.to_string())
+        .mse()
     }
 }
