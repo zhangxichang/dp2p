@@ -23,7 +23,7 @@ export default function MenuBar() {
           </button>
         </li>
       </ul>
-      <dialog ref={about_dialog} class="modal">
+      <dialog ref={about_dialog} class="modal" closedby="closerequest">
         <Show when={lazy_about_modal_load()}>
           <LazyAboutModal />
         </Show>

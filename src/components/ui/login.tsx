@@ -53,7 +53,7 @@ export default function Login() {
   return (
     <fieldset class="fieldset bg-base-100 border border-base-300 rounded-box p-6 pt-2">
       <legend class="fieldset-legend">登录账户</legend>
-      <span class="label">选择你的账户登录</span>
+      <span class="text-gray-500">选择你的账户登录</span>
       <div class="flex flex-col pt-4">
         <div class="flex justify-center mb-6">
           <div class="avatar">

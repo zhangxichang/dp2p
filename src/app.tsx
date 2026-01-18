@@ -11,7 +11,7 @@ export function Shell(props: RouteSectionProps) {
   return (
     <div class="absolute w-dvw h-dvh flex flex-col bg-base-200">
       <MenuBar />
-      <div class="flex-1 flex flex-col relative">
+      <div class="flex-1 flex relative">
         <Show when={is_routing()}>
           <progress class="progress progress-primary absolute rounded-none h-0.5" />
         </Show>
