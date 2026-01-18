@@ -10,7 +10,8 @@ export class SQLiteModuleImpl implements SQLiteModule {
   private api?: Remote<SQLiteWorker>;
 
   private get_api() {
-    return this.api!;
+    if (!this.api) throw new Error("API不存在");
+    return this.api;
   }
   async init() {
     const worker = new Worker();

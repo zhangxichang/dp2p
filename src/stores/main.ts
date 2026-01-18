@@ -2,8 +2,9 @@ import { EndpointModuleAdapter } from "~/lib/endpoint";
 import type { EndpointModule } from "~/lib/endpoint/interface";
 import { SQLiteModuleAdapter } from "~/lib/sqlite";
 import type { SQLite, SQLiteModule } from "~/lib/sqlite/interface";
+import type { Store } from "./interface";
 
-export class MainStore {
+export class MainStore implements Store {
   sqlite_module: SQLiteModule;
   endpoint_module: EndpointModule;
   sqlite: SQLite;

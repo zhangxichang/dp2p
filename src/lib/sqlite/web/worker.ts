@@ -12,7 +12,8 @@ export class SQLiteWorker implements Init {
   private api?: SQLiteAPI;
 
   private get_api() {
-    return this.api!;
+    if (!this.api) throw new Error("API不存在");
+    return this.api;
   }
   async init() {
     //eslint-disable-next-line @typescript-eslint/no-unsafe-assignment
