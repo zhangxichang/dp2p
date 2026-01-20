@@ -3,16 +3,16 @@ import Image from "../widgets/image";
 import { createForm } from "@tanstack/solid-form";
 import { For, Show } from "solid-js";
 import { type } from "arktype";
-import { use_main_store } from "../context";
 import { QueryBuilder } from "~/lib/query_builder";
+import { MainContext, use_context } from "../context";
 
 const FormSchema = type({
   user_name: type("string > 0").configure({ message: "用户名不能为空" }),
-  avatar: "File | null |undefined",
+  avatar: "File | null | undefined",
 });
 
 export default function Register() {
-  const main_store = use_main_store();
+  const main_store = use_context(MainContext);
   let avatar_file_input: HTMLInputElement | undefined;
   const form = createForm(() => ({
     defaultValues: { user_name: "", avatar: null as File | null | undefined },
@@ -39,7 +39,7 @@ export default function Register() {
   return (
     <fieldset class="fieldset bg-base-100 border border-base-300 rounded-box p-6 pt-2">
       <legend class="fieldset-legend">注册账户</legend>
-      <span class="text-gray-500">输入用户名注册你的账户</span>
+      <span class="text-base-content/60">输入用户名注册你的账户</span>
       <form
         class="flex flex-col pt-4"
         onSubmit={async (e) => {

@@ -8,7 +8,7 @@ export default function SidebarButtonGroup(props: {
 }) {
   return (
     <div class="join join-vertical px-2">
-      <label class="join-item btn btn-square bg-base-100 has-checked:bg-primary has-checked:text-primary-content">
+      <label class="join-item btn btn-square bg-base-100 has-checked:bg-neutral has-checked:text-neutral-content">
         <input
           type="radio"
           class="hidden"
@@ -17,7 +17,7 @@ export default function SidebarButtonGroup(props: {
         />
         <MessageCircleMoreIcon />
       </label>
-      <label class="join-item btn btn-square bg-base-100 has-checked:bg-primary has-checked:text-primary-content">
+      <label class="join-item btn btn-square bg-base-100 has-checked:bg-neutral has-checked:text-neutral-content">
         <input
           type="radio"
           class="hidden"
@@ -27,7 +27,7 @@ export default function SidebarButtonGroup(props: {
         />
         <UserIcon />
       </label>
-      <label class="join-item btn btn-square bg-base-100 has-checked:bg-primary has-checked:text-primary-content">
+      <label class="join-item btn btn-square bg-base-100 has-checked:bg-neutral has-checked:text-neutral-content">
         <input
           type="radio"
           class="hidden"

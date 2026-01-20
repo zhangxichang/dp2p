@@ -11,9 +11,9 @@ import {
 import Image from "../widgets/image";
 import { type } from "arktype";
 import { createForm } from "@tanstack/solid-form";
-import { use_main_store } from "../context";
 import { QueryBuilder } from "~/lib/query_builder";
 import { useNavigate } from "@solidjs/router";
+import { MainContext, use_context } from "../context";
 
 const FormSchema = type({
   user_id: type("string").configure({ message: "请选择一个账户" }),
@@ -21,7 +21,7 @@ const FormSchema = type({
 
 export default function Login() {
   const navigate = useNavigate();
-  const main_store = use_main_store();
+  const main_store = use_context(MainContext);
   const [users, users_actions] = createResource(async () => {
     return await main_store.sqlite.query<{
       id: string;
@@ -53,7 +53,7 @@ export default function Login() {
   return (
     <fieldset class="fieldset bg-base-100 border border-base-300 rounded-box p-6 pt-2">
       <legend class="fieldset-legend">登录账户</legend>
-      <span class="text-gray-500">选择你的账户登录</span>
+      <span class="text-base-content/60">选择你的账户登录</span>
       <div class="flex flex-col pt-4">
         <div class="flex justify-center mb-6">
           <div class="avatar">

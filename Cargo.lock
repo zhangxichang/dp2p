@@ -3817,7 +3817,6 @@ dependencies = [
  "tauri-plugin-prevent-default",
  "tauri-plugin-single-instance",
  "taurpc",
- "thiserror 2.0.17",
  "tokio",
  "tokio-rusqlite",
  "utils",

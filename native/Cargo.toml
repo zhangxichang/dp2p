@@ -28,7 +28,6 @@ tauri-plugin-single-instance = "2.3.7"
 tauri-plugin-os = "2.3.2"
 tauri-plugin-opener = "2.5.3"
 
-thiserror = "2.0.17"
 eyre = "0.6.12"
 log = "0.4.29"
 flexi_logger = { version = "0.31.8", features = ["json", "compress"] }

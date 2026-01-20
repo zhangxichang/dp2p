@@ -2,9 +2,9 @@ import { MessagesSquareIcon, UserIcon, UserPlusIcon } from "lucide-solid";
 import Image from "../widgets/image";
 import { createSignal, For, lazy, Show } from "solid-js";
 import { createAsync, useParams } from "@solidjs/router";
-import { use_main_store } from "../context";
 import { QueryBuilder } from "~/lib/query_builder";
 import type { Person } from "~/lib/types";
+import { MainContext, use_context } from "../context";
 
 const LazyAddFriendModal = lazy(() => import("~/components/modal/add_friend"));
 
@@ -12,7 +12,7 @@ export default function FriendList() {
   let add_friend_dialog: HTMLDialogElement | undefined;
   const [lazy_add_friend_modal_load, set_lazy_add_friend_modal_load] =
     createSignal(false);
-  const main_store = use_main_store();
+  const main_store = use_context(MainContext);
   const params = useParams<{ user_id: string }>();
   const friends = createAsync(() =>
     main_store.sqlite.query<Person>(
@@ -59,7 +59,7 @@ export default function FriendList() {
               </div>
               <div class="flex flex-col">
                 <span>{v.name}</span>
-                <span class="text-xs text-gray-500">{v.bio}</span>
+                <span class="text-xs text-base-content/60">{v.bio}</span>
               </div>
               <button class="btn btn-square btn-ghost">
                 <MessagesSquareIcon />
