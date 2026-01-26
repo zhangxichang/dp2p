@@ -13,7 +13,7 @@ const FormSchema = type({
 
 export default function Register() {
   const main_store = use_context(MainContext);
-  let avatar_file_input: HTMLInputElement | undefined;
+  let avatar_file_input_ref: HTMLInputElement | undefined;
   const form = createForm(() => ({
     defaultValues: { user_name: "", avatar: null as File | null | undefined },
     validators: { onChange: FormSchema },
@@ -53,7 +53,7 @@ export default function Register() {
               <>
                 <div
                   class="avatar cursor-pointer"
-                  onClick={() => avatar_file_input?.click()}
+                  onClick={() => avatar_file_input_ref?.click()}
                 >
                   <Show
                     keyed
@@ -66,7 +66,7 @@ export default function Register() {
                   </Show>
                 </div>
                 <input
-                  ref={avatar_file_input}
+                  ref={avatar_file_input_ref}
                   name={field().name}
                   onBlur={field().handleBlur}
                   onChange={(e) =>

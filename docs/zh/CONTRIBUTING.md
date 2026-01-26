@@ -1,10 +1,10 @@
 # 贡献指南
 
-感谢你花时间考虑为 Starlink 做贡献！本指南将帮助你了解如何有效地报告问题、提交代码或文档改进。
+感谢你花时间考虑为 DP2P 做贡献！本指南将帮助你了解如何有效地报告问题、提交代码或文档改进。
 
 ## 开始之前
 
-- **查看现有议题**：在创建新议题（Issue）或拉取请求（Pull Request）前，请先搜索[议题列表](https://github.com/ZhangXiChang/starlink/issues)，确认你的想法是否已被讨论。
+- **查看现有议题**：在创建新议题（Issue）或拉取请求（Pull Request）前，请先搜索[议题列表](https://github.com/ZhangXiChang/dp2p/issues)，确认你的想法是否已被讨论。
 - **开始编码前**：无论是修复你发现的 Bug 还是添加新功能，都**建议先创建一个 Issue 进行讨论**。这有助于确保你的工作符合项目目标，并避免重复工作。如果是解决现有的 Issue 那么你就可以不用创建 Issue
 
 ## 开发流程
@@ -12,8 +12,8 @@
 1.  **Fork仓库**：在GitHub上Fork本仓库到你的账户。
 2.  **克隆仓库**：将你Fork后的仓库克隆到本地。
     ```bash
-    git clone https://github.com/用户名/仓库名
-    cd starlink
+    git clone https://github.com/用户名/dp2p
+    cd dp2p
     ```
 3.  **创建分支**：从最新的 `main` 分支创建一个新分支。
     ```bash

@@ -1,26 +1,37 @@
-# Starlink
+# Distributed Peer-to-Peer Communication Software
 
 [中文](docs/zh/README.md)
+A cross-platform network chat application built on modern web technologies. It can be used directly as a web application or packaged as a native desktop application, providing users with a secure, efficient, and smooth communication experience.
 
----
+![Promotional Image](../assets/promotion_image.png)
 
-A cross-platform network chat application built with modern web technologies, usable both as a web application and packaged as a native desktop application.
+## ✨ Core Advantages
 
-![Promotional Image](assets/promotion_image.png)
+- **True Cross-Platform Experience** - Seamlessly supports Web and Windows with consistent, fluid user experience
+- **Instant Web Application** - No installation required; simply access **[DP2P](https://dp2p.zhangxichang.com)** through your browser to start using
+- **High-Performance Rust Backend** - Core application components (WebAssembly modules and native backend) written in Rust, combining excellent performance with memory safety
+- **Distributed P2P Communication** - Utilizes the Kademlia protocol to build a distributed network, ensuring reliable user connectivity
 
-## ✨ Key Features
-- **Cross-Platform Experience** - Delivers a consistent and smooth experience across various devices and operating systems
-- **Ready-to-Use Web App** - No installation required. Simply visit **[Starlink](https://starlink.zhangxichang.com)** in your browser to start using it
-- **High-Performance Rust Backend** - The application core (WebAssembly modules and native backend) is written in Rust, ensuring both high performance and memory safety
-## ⬇️ How to Get It
-- **[GitHub Release](https://github.com/ZhangXiChang/starlink/releases)** - Primary release channel
-- **[Gitee Release](https://gitee.com/zhangxichang/starlink-release-latest/releases)** - Suitable for users in China
-## 📚 Documentation
-- [Project Architecture Design](docs/zh/PROJECT_ARCH.md)
-- [Developer Guide](docs/zh/DEVELOPER_GUIDE.md)
-## 🤝 Contributing
-We welcome all forms of contributions! Please refer to the [Contributing Guide](docs/CONTRIBUTING.md) for detailed contribution guidelines.
+## ⬇️ Download Options
+
+- **[GitHub Release](https://github.com/ZhangXiChang/dp2p/releases)** - Primary distribution channel for international users
+- **[Gitee Release](https://gitee.com/zhangxichang/dp2p-release-latest/releases)** - Faster download experience for users in China
+
+## 📚 Documentation & Architecture
+
+We recommend using [Obsidian](https://obsidian.md) to open project documentation, as some documents require this tool for proper rendering.
+
+- [Project Architecture Design](PROJECT_ARCH.md) - Detailed analysis of system design and technology choices
+- [Developer Guide](DEVELOPER_GUIDE.md) - Quick start guide for development environment setup and build processes
+
+## 🤝 Contribute
+
+We sincerely welcome contributions of all kinds! Whether it's code submissions, documentation improvements, or issue reports, your participation helps make Starlink better. For detailed contribution procedures, please refer to the [Contribution Guide](CONTRIBUTING.md).
+
 ## 💬 Feedback & Suggestions
-Encountered an issue or have an idea for improvement? We look forward to hearing from you:
-- 🐞 Report a Bug: [Create an Issue](https://github.com/ZhangXiChang/starlink/issues/new?template=你遇到了bug-.md)
-- 💡 Request a New Feature: [Feature Request Template](https://github.com/ZhangXiChang/starlink/issues/new?template=有希望改进的地方-.md)
+
+Your feedback drives our progress! We look forward to your valuable input:
+
+- 🐞 **Report Issues**: [Submit a Bug](https://github.com/ZhangXiChang/dp2p/issues/new?template=you-encountered-a-bug-.md)
+- 💡 **Feature Requests**: [Suggest New Features](https://github.com/ZhangXiChang/dp2p/issues/new?template=you-have-an-improvement-idea-.md)
+- 💬 **Community Discussion**: Join our discussion area to share experiences with other users

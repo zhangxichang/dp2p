@@ -5,7 +5,7 @@ import { get_window } from "~/lib/window";
 const LazyAboutModal = lazy(() => import("~/components/modal/about"));
 
 export default function MenuBar() {
-  let about_dialog: HTMLDialogElement | undefined;
+  let about_dialog_ref: HTMLDialogElement | undefined;
   const [lazy_about_modal_load, set_lazy_about_modal_load] =
     createSignal(false);
   return (
@@ -15,7 +15,7 @@ export default function MenuBar() {
           <button
             class="btn btn-sm bg-base-100"
             onClick={() => {
-              about_dialog?.showModal();
+              about_dialog_ref?.showModal();
               set_lazy_about_modal_load(true);
             }}
           >
@@ -23,7 +23,7 @@ export default function MenuBar() {
           </button>
         </li>
       </ul>
-      <dialog ref={about_dialog} class="modal" closedby="closerequest">
+      <dialog ref={about_dialog_ref} class="modal" closedby="closerequest">
         <Show when={lazy_about_modal_load()}>
           <LazyAboutModal />
         </Show>

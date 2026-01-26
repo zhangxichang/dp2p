@@ -1,5 +1,5 @@
 [package]
-name = "starlink-relay"
+name = "dp2p-relay"
 version = "0.1.0"
 edition = "2024"
 

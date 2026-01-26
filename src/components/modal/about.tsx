@@ -1,10 +1,11 @@
 import { Octokit } from "octokit";
-import { ErrorBoundary, For, Suspense } from "solid-js";
+import { ErrorBoundary, For, Show, Suspense } from "solid-js";
 import { open_url } from "~/lib/opener";
 import { createAsync } from "@solidjs/router";
 import Image from "../widgets/image";
 import Loading from "../widgets/loading";
 import Error from "../widgets/error";
+import { UserIcon } from "lucide-solid";
 
 export default function AboutModal() {
   const version = createAsync(async () => {
@@ -17,13 +18,13 @@ export default function AboutModal() {
   const contributors = createAsync(async () => {
     const contributors = await new Octokit().rest.repos.listContributors({
       owner: "ZhangXiChang",
-      repo: "starlink",
+      repo: "dp2p",
     });
     return contributors.data;
   });
   return (
     <div class="modal-box flex flex-col relative">
-      <span class="absolute right-4 bottom-3 select-none text-base-content/60 text-sm">
+      <span class="absolute top-3 right-3 select-none text-base-content/60 text-sm">
         按<kbd class="kbd kbd-sm">ESC</kbd>关闭
       </span>
       <span class="text-base-content font-bold text-lg">关于</span>
@@ -34,7 +35,7 @@ export default function AboutModal() {
             class="link link-hover font-bold text-accent"
             onClick={() =>
               open_url(
-                "https://github.com/ZhangXiChang/starlink/graphs/contributors",
+                "https://github.com/ZhangXiChang/dp2p/graphs/contributors",
               )
             }
           >
@@ -48,7 +49,15 @@ export default function AboutModal() {
                 <For each={contributors()}>
                   {(v) => (
                     <div class="avatar">
-                      <Image class="size-10" image={v.avatar_url} />
+                      <Show
+                        keyed
+                        when={v.avatar_url}
+                        fallback={
+                          <UserIcon class="size-12 rounded-full bg-base-300" />
+                        }
+                      >
+                        {(v) => <Image class="size-10" image={v} />}
+                      </Show>
                     </div>
                   )}
                 </For>
@@ -59,7 +68,7 @@ export default function AboutModal() {
         <div class="flex flex-col items-start">
           <span
             class="link link-hover text-sm font-bold text-info"
-            onClick={() => open_url("https://github.com/ZhangXiChang/starlink")}
+            onClick={() => open_url("https://github.com/ZhangXiChang/dp2p")}
           >
             源码仓库
           </span>

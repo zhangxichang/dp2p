@@ -1,7 +1,7 @@
 {
   "$schema": "../node_modules/@tauri-apps/cli/config.schema.json",
-  "identifier": "com.zhangxichang.starlink",
-  "productName": "starlink",
+  "identifier": "com.zhangxichang.dp2p",
+  "productName": "dp2p",
   "version": "0.1.0",
   "build": {
     "frontendDist": "../.output/public",

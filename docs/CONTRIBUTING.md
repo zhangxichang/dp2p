@@ -1,6 +1,6 @@
 # Contributing Guide
 
-Thank you for taking the time to consider contributing to Starlink! This guide will help you understand how to effectively report issues, submit code, or propose documentation improvements.
+Thank you for taking the time to consider contributing to DP2P! This guide will help you understand how to effectively report issues, submit code, or propose documentation improvements.
 
 ## Before You Start
 
@@ -12,8 +12,8 @@ Thank you for taking the time to consider contributing to Starlink! This guide w
 1.  **Fork the Repository**: Fork this repository to your own GitHub account.
 2.  **Clone the Repository**: Clone your forked repository to your local machine.
     ```bash
-    git clone https://github.com/your-username/starlink.git
-    cd starlink
+    git clone https://github.com/your-username/dp2p
+    cd dp2p
     ```
 3.  **Create a Branch**: Create a new branch from the latest `main` branch.
     ```bash

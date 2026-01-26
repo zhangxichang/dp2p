@@ -93,7 +93,7 @@ jobs:
         run: bun tauri build
       - name: 处理构建产物
         run: |
-          $env:TARGET_PATH="target/release/starlink-windows.exe"
+          $env:TARGET_PATH="target/release/dp2p-windows.exe"
           Move-Item -Path target/release/native.exe -Destination $env:TARGET_PATH
           "TARGET_PATH=$env:TARGET_PATH" | Out-File -FilePath $env:GITHUB_ENV -Append -Encoding utf8
       - name: 上传构建产物
@@ -109,11 +109,11 @@ jobs:
     steps:
       - uses: actions/checkout@v6
       - name: 构建
-        run: cargo build -p starlink-relay --release
+        run: cargo build -p dp2p-relay --release
       - name: 上传构建产物
         uses: actions/upload-artifact@v5
         with:
-          path: target/release/starlink-relay
+          path: target/release/dp2p-relay
   release:
     needs:
       - build-windows
@@ -148,7 +148,7 @@ jobs:
         uses: h-twinkle/sync-action@v1
         with:
           github_owner: ZhangXiChang
-          github_repo: starlink
+          github_repo: dp2p
           gitee_owner: zhangxichang
-          gitee_repo: starlink-release-latest
+          gitee_repo: dp2p-release-latest
           gitee_token: ${{secrets.GITEE_TOKEN}}
