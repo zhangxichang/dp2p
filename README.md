@@ -1,6 +1,6 @@
 # Distributed Peer-to-Peer Communication Software
-
 [中文](docs/zh/README.md)
+
 A cross-platform network chat application built on modern web technologies. It can be used directly as a web application or packaged as a native desktop application, providing users with a secure, efficient, and smooth communication experience.
 
 ![Promotional Image](docs/assets/promotion_image.png)
