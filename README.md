@@ -3,7 +3,7 @@
 [中文](docs/zh/README.md)
 A cross-platform network chat application built on modern web technologies. It can be used directly as a web application or packaged as a native desktop application, providing users with a secure, efficient, and smooth communication experience.
 
-![Promotional Image](../assets/promotion_image.png)
+![Promotional Image](docs/assets/promotion_image.png)
 
 ## ✨ Core Advantages
 
@@ -21,12 +21,12 @@ A cross-platform network chat application built on modern web technologies. It c
 
 We recommend using [Obsidian](https://obsidian.md) to open project documentation, as some documents require this tool for proper rendering.
 
-- [Project Architecture Design](PROJECT_ARCH.md) - Detailed analysis of system design and technology choices
-- [Developer Guide](DEVELOPER_GUIDE.md) - Quick start guide for development environment setup and build processes
+- [Project Architecture Design](docs/zh/PROJECT_ARCH.md) - Detailed analysis of system design and technology choices
+- [Developer Guide](docs/zh/DEVELOPER_GUIDE.md) - Quick start guide for development environment setup and build processes
 
 ## 🤝 Contribute
 
-We sincerely welcome contributions of all kinds! Whether it's code submissions, documentation improvements, or issue reports, your participation helps make Starlink better. For detailed contribution procedures, please refer to the [Contribution Guide](CONTRIBUTING.md).
+We sincerely welcome contributions of all kinds! Whether it's code submissions, documentation improvements, or issue reports, your participation helps make Starlink better. For detailed contribution procedures, please refer to the [Contribution Guide](docs/CONTRIBUTING.md).
 
 ## 💬 Feedback & Suggestions
 
