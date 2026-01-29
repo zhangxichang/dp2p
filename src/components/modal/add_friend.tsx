@@ -1,7 +1,19 @@
+import { HomeContext, use_context } from "../context";
+
 export default function AddFriend() {
-  const search_user = async () => {
-    //TODO
-    await Promise.resolve();
+  const home_store = use_context(HomeContext);
+  let search_user_id_input_ref: HTMLInputElement | undefined;
+  const on_search_user = async () => {
+    if (
+      search_user_id_input_ref !== undefined &&
+      search_user_id_input_ref.value != ""
+    ) {
+      console.info(
+        await home_store.endpoint.request_person(
+          search_user_id_input_ref.value,
+        ),
+      );
+    }
   };
   return (
     <div class="modal-box flex flex-col relative">
@@ -15,15 +27,16 @@ export default function AddFriend() {
           <span class="font-bold">搜索用户</span>
           <div class="join w-full">
             <input
+              ref={search_user_id_input_ref}
               class="join-item input flex-1"
               placeholder="用户ID"
               onKeyDown={async (e) => {
                 if (e.key === "Enter") {
-                  await search_user();
+                  await on_search_user();
                 }
               }}
             />
-            <button class="join-item btn" onClick={search_user}>
+            <button class="join-item btn" onClick={on_search_user}>
               搜索
             </button>
           </div>

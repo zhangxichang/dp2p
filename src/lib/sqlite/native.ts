@@ -12,40 +12,40 @@ export class SQLiteModuleImpl implements SQLiteModule {
 }
 
 export class SQLiteImpl implements SQLite {
-  private id: bigint;
+  private handle: bigint;
   private on_updates: ((event: SQLiteUpdateEvent) => void)[];
 
   private constructor(
-    id: bigint,
+    handle: bigint,
     on_updates: ((event: SQLiteUpdateEvent) => void)[],
   ) {
-    this.id = id;
+    this.handle = handle;
     this.on_updates = on_updates;
   }
   static async new(path: string) {
-    const id = await createTauRPCProxy().sqlite.open_db(path);
+    const handle = await createTauRPCProxy().sqlite.open_db(path);
     const on_updates: ((event: SQLiteUpdateEvent) => void)[] = [];
-    await createTauRPCProxy().sqlite.on_update(id, (e) =>
+    await createTauRPCProxy().sqlite.on_update(handle, (e) =>
       on_updates.forEach((f) => f(e)),
     );
-    return new SQLiteImpl(id, on_updates);
+    return new SQLiteImpl(handle, on_updates);
   }
   async close() {
-    await createTauRPCProxy().sqlite.close_db(this.id);
+    await createTauRPCProxy().sqlite.close_db(this.handle);
   }
   async execute_sql(sql: string) {
-    await createTauRPCProxy().sqlite.execute_sql(this.id, sql);
+    await createTauRPCProxy().sqlite.execute_sql(this.handle, sql);
   }
   async execute(compiled_query: CompiledQuery) {
     await createTauRPCProxy().sqlite.execute(
-      this.id,
+      this.handle,
       compiled_query.sql,
       compiled_query.parameters as JsonValue[],
     );
   }
   async query<T>(compiled_query: CompiledQuery) {
     return (await createTauRPCProxy().sqlite.query(
-      this.id,
+      this.handle,
       compiled_query.sql,
       compiled_query.parameters as JsonValue[],
     )) as T[];

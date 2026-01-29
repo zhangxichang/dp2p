@@ -5,6 +5,7 @@ import FriendList from "~/components/ui/friend_list";
 import SidebarButtonGroup, {
   type SidebarButtonGroupState,
 } from "~/components/ui/sidebar_button_group";
+import SidebarUser from "~/components/ui/sidebar_user";
 import { HomeStore } from "~/stores/home";
 
 export default function Home() {
@@ -19,7 +20,8 @@ export default function Home() {
         onCleanup(() => v.cleanup());
         return (
           <HomeContext.Provider value={v}>
-            <div class="flex">
+            <div class="flex relative">
+              <SidebarUser />
               <SidebarButtonGroup set_state={set_sidebar_button_group_state} />
               <div class="w-80 flex flex-col bg-base-100 border border-base-300 rounded-t-box">
                 <Switch>

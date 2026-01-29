@@ -16,7 +16,6 @@ export default function FriendList() {
   const main_store = use_context(MainContext);
   const params = useParams<{ user_id: string }>();
   const friends = createAsync(async () => {
-    await new Promise(() => {});
     return main_store.sqlite.query<Person>(
       QueryBuilder.selectFrom("friend")
         .select(["id", "name", "avatar", "bio"])
@@ -27,7 +26,7 @@ export default function FriendList() {
   let friend_list_ref: HTMLDivElement | undefined;
   const friend_list_virtualizer = createVirtualizer({
     getScrollElement: () => friend_list_ref ?? null,
-    count: friends()?.length ?? 20,
+    count: friends()?.length ?? 0,
     estimateSize: () => 80,
   });
   return (

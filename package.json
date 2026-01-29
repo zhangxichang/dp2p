@@ -32,10 +32,11 @@
     "wrangler": "^4.59.2"
   },
   "dependencies": {
+    "@dp2p/endpoint": "file:wasm/endpoint/pkg",
+    "@floating-ui/dom": "^1.7.4",
     "@solidjs/meta": "^0.29.4",
     "@solidjs/router": "^0.15.4",
     "@solidjs/start": "^1.2.1",
-    "@dp2p/endpoint": "file:wasm/endpoint/pkg",
     "@tanstack/solid-form": "^1.27.7",
     "@tanstack/solid-virtual": "^3.13.18",
     "@tauri-apps/api": "^2.9.1",
