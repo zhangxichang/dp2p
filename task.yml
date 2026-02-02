@@ -8,6 +8,6 @@ jobs:
       - name: 构建
         run: cargo build -p dp2p-relay --release
       - name: 上传构建产物
-        uses: actions/upload-artifact@v5
+        uses: actions/upload-artifact@v6
         with:
           path: target/release/dp2p-relay

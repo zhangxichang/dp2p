@@ -97,7 +97,7 @@ jobs:
           Move-Item -Path target/release/native.exe -Destination $env:TARGET_PATH
           "TARGET_PATH=$env:TARGET_PATH" | Out-File -FilePath $env:GITHUB_ENV -Append -Encoding utf8
       - name: 上传构建产物
-        uses: actions/upload-artifact@v5
+        uses: actions/upload-artifact@v6
         with:
           path: ${{env.TARGET_PATH}}
   build-relay:
@@ -111,7 +111,7 @@ jobs:
       - name: 构建
         run: cargo build -p dp2p-relay --release
       - name: 上传构建产物
-        uses: actions/upload-artifact@v5
+        uses: actions/upload-artifact@v6
         with:
           path: target/release/dp2p-relay
   release:
@@ -145,7 +145,7 @@ jobs:
             --package semantic-release
             semantic-release
       - name: 从GitHub Release发布内容到Gitee Release
-        uses: h-twinkle/sync-action@v1
+        uses: trustedinster/sync-release-gitee@v1.3
         with:
           github_owner: ZhangXiChang
           github_repo: dp2p

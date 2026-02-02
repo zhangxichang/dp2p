@@ -1,33 +1,33 @@
 datasource db {
-  provider="sqlite"
+  provider = "sqlite"
 }
 
 generator kysely {
-  provider="prisma-kysely"
-  output="src/generated"
-  fileName="db_schema.ts"
-  bytesTypeOverride="Uint8Array"
+  provider          = "prisma-kysely"
+  output            = "src/generated"
+  fileName          = "db_schema.ts"
+  bytesTypeOverride = "Uint8Array"
 }
 
 model user {
-  id String @id
-  key Bytes
-  name String @unique
+  id     String @id
+  key    Bytes
+  name   String @unique
   avatar Bytes?
-  bio String @default("还没有自我介绍")
+  bio    String @default("还没有自我介绍")
 }
 
 model friend {
-  id String @id
+  id      String @id
   user_id String
-  name String
-  avatar Bytes?
-  bio String
+  name    String
+  avatar  Bytes?
+  bio     String
 }
 
 model message {
-  id Int @id @default(autoincrement())
+  id        Int      @id @default(autoincrement())
   sender_id String
   timestamp DateTime @default(now())
-  text String
+  text      String
 }

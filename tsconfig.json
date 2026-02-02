@@ -1,7 +1,7 @@
 {
   "compilerOptions": {
     "paths": {
-      "~/*": ["./src/*"],
+      "~/*": ["./src/*"]
     },
     "target": "esnext",
     "module": "esnext",
@@ -20,6 +20,6 @@
     "noUncheckedSideEffectImports": true,
     "noFallthroughCasesInSwitch": true,
     "useDefineForClassFields": true,
-    "isolatedModules": true,
-  },
+    "isolatedModules": true
+  }
 }

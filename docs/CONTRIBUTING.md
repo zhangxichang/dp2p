@@ -20,7 +20,7 @@ Thank you for taking the time to consider contributing to DP2P! This guide will 
     git checkout -b <branch-name>
     ```
 4.  **Make Changes and Commit**: Implement your changes locally.
-    - **Follow Code Style**: Please adhere to the existing code style and conventions in the project. Using the [Zed](https://zed.dev/) editor is recommended for the best experience.
+    - **Follow Code Style**: Please adhere to the existing code style and conventions in the project.
     - **Testing**: If you are adding code, please include corresponding tests.
     - **Commit Messages**: Please write clear and descriptive commit messages.
 5.  **Push Your Branch**: Push your branch to your forked repository.

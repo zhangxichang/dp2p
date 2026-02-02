@@ -1,4 +1,3 @@
-/* eslint-disable */
 import { defineConfig } from "@solidjs/start/config";
 import { config } from "./app.config";
 

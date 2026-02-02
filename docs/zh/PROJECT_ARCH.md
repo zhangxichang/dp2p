@@ -1,15 +1,14 @@
 ---
-
 excalidraw-plugin: parsed
 tags: [excalidraw]
-
 ---
-==⚠  Switch to EXCALIDRAW VIEW in the MORE OPTIONS menu of this document. ⚠== You can decompress Drawing data with the command palette: 'Decompress current Excalidraw file'. For more info check in plugin settings under 'Saving'
 
+==⚠ Switch to EXCALIDRAW VIEW in the MORE OPTIONS menu of this document. ⚠== You can decompress Drawing data with the command palette: 'Decompress current Excalidraw file'. For more info check in plugin settings under 'Saving'
 
 # Excalidraw Data
 
 ## Text Elements
+
 GitHub Release ^a7P3enJQ
 
 Windows、Linux、Android、IOS、Macos ^gTZRVF6g
@@ -111,10 +110,13 @@ Python ^tzGhUM7e
 是核心设计目标 ^k5TbltUL
 
 ## Element Links
+
 mJPxWS5L: https://kelseyc18.github.io/kademlia_vis/basics
 
 %%
+
 ## Drawing
+
 ```compressed-json
 N4KAkARALgngDgUwgLgAQQQDwMYEMA2AlgCYBOuA7hADTgQBuCpAzoQPYB2KqATLZMzYBXUtiRoIACyhQ4zZAHoFAc0JRJQgEYA6bGwC2CgF7N6hbEcK4OCtptbErHALRY8RMpWdx8Q1TdIEfARcZgRmBShcZQUebQBGAE4EmjoghH0EDihmbgBtcDBQMBKIEm4IbFJ9NgB1ABFcACsAMTYAJXqANXouzABVZgBJAA5CVJLIWEQKwOwojmVgidLM
 
@@ -532,4 +534,5 @@ E644RLmJtEnJYSDLZajAHTc4iCkIGAAQBV4BjgtRjl4KuI0gprfoBeslb4JYu5bqQHd4ennq47vGOBs9
 
 3EHIATwTYA8wstuWE8tqYAMNsT4gtqXITNrsAuGHmAzACoKj2VcE6trhtxogEIOfUYAhkKxAZZmFmYQGCAOfT+N7eGeY88DnpRyHRVw+k9ABgEFA6QHtticGH00eERAPfQttdNwqIvuCZtjgGYAAtsxAKcB8gRsCyANoWC0dkFl44QESovEDTAQAA===
 ```
+
 %%
