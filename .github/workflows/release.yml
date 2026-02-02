@@ -73,6 +73,8 @@ jobs:
       - check-release
     if: ${{needs.check-release.outputs.release=='true'}}
     runs-on: windows-latest
+    env:
+      TARGET_PATH: target/release/dp2p-windows.exe
     steps:
       - uses: actions/checkout@v6
       - uses: cargo-bins/cargo-binstall@main
@@ -93,9 +95,7 @@ jobs:
         run: bun tauri build
       - name: 处理构建产物
         run: |
-          $env:TARGET_PATH="target/release/dp2p-windows.exe"
-          Move-Item -Path target/release/native.exe -Destination $env:TARGET_PATH
-          "TARGET_PATH=$env:TARGET_PATH" | Out-File -FilePath $env:GITHUB_ENV -Append -Encoding utf8
+          Move-Item -Path target/release/native.exe -Destination ${{env.TARGET_PATH}}
       - name: 上传构建产物
         uses: actions/upload-artifact@v6
         with:
