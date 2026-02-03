@@ -1,0 +1,17 @@
+name: 初始化项目
+description: 初始化项目依赖
+runs:
+  using: "composite"
+  steps:
+    - uses: actions/checkout@v6
+    - uses: cargo-bins/cargo-binstall@main
+    - uses: oven-sh/setup-bun@v2
+    - uses: astral-sh/setup-uv@v7
+    - name: 初始化项目
+      shell: bash
+      run: |
+        rustup target install wasm32-unknown-unknown
+        cargo binstall wasm-pack
+        bun run install:pre
+        bun install
+        bun run install:post

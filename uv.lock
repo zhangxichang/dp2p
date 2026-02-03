@@ -919,29 +919,6 @@ wheels = [
 ]
 
 [[package]]
-name = "note"
-version = "0.1.0"
-source = { virtual = "." }
-dependencies = [
-    { name = "black" },
-    { name = "isort" },
-    { name = "jupyterlab" },
-    { name = "jupyterlab-code-formatter" },
-    { name = "jupyterlab-lsp" },
-    { name = "python-lsp-server", extra = ["all"] },
-]
-
-[package.metadata]
-requires-dist = [
-    { name = "black", specifier = ">=26.1.0" },
-    { name = "isort", specifier = ">=7.0.0" },
-    { name = "jupyterlab", specifier = ">=4.5.1" },
-    { name = "jupyterlab-code-formatter", specifier = ">=3.0.2" },
-    { name = "jupyterlab-lsp", specifier = ">=5.2.0" },
-    { name = "python-lsp-server", extras = ["all"], specifier = ">=1.14.0" },
-]
-
-[[package]]
 name = "notebook-shim"
 version = "0.2.4"
 source = { registry = "https://pypi.org/simple" }
@@ -1421,6 +1398,29 @@ wheels = [
     { url = "https://files.pythonhosted.org/packages/85/70/92482ccffb96f5441aab93e26c4d66489eb599efdcf96fad90c14bbfb976/rpds_py-0.30.0-cp314-cp314t-musllinux_1_2_x86_64.whl", hash = "sha256:dbd936cde57abfee19ab3213cf9c26be06d60750e60a8e4dd85d1ab12c8b1f40", size = 556030, upload-time = "2025-11-30T20:24:10.956Z" },
     { url = "https://files.pythonhosted.org/packages/20/53/7c7e784abfa500a2b6b583b147ee4bb5a2b3747a9166bab52fec4b5b5e7d/rpds_py-0.30.0-cp314-cp314t-win32.whl", hash = "sha256:dc824125c72246d924f7f796b4f63c1e9dc810c7d9e2355864b3c3a73d59ade0", size = 211570, upload-time = "2025-11-30T20:24:12.735Z" },
     { url = "https://files.pythonhosted.org/packages/d0/02/fa464cdfbe6b26e0600b62c528b72d8608f5cc49f96b8d6e38c95d60c676/rpds_py-0.30.0-cp314-cp314t-win_amd64.whl", hash = "sha256:27f4b0e92de5bfbc6f86e43959e6edd1425c33b5e69aab0984a72047f2bcf1e3", size = 226532, upload-time = "2025-11-30T20:24:14.634Z" },
+]
+
+[[package]]
+name = "scripts"
+version = "0.1.0"
+source = { virtual = "." }
+dependencies = [
+    { name = "black" },
+    { name = "isort" },
+    { name = "jupyterlab" },
+    { name = "jupyterlab-code-formatter" },
+    { name = "jupyterlab-lsp" },
+    { name = "python-lsp-server", extra = ["all"] },
+]
+
+[package.metadata]
+requires-dist = [
+    { name = "black", specifier = ">=26.1.0" },
+    { name = "isort", specifier = ">=7.0.0" },
+    { name = "jupyterlab", specifier = ">=4.5.1" },
+    { name = "jupyterlab-code-formatter", specifier = ">=3.0.2" },
+    { name = "jupyterlab-lsp", specifier = ">=5.2.0" },
+    { name = "python-lsp-server", extras = ["all"], specifier = ">=1.14.0" },
 ]
 
 [[package]]

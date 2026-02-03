@@ -9,8 +9,8 @@ jobs:
   check-release:
     name: 检查是否需要发布
     outputs:
-      release: ${{steps.check.outputs.release}}
-      version: ${{steps.check.outputs.version}}
+      release: ${{ steps.check.outputs.release }}
+      version: ${{ steps.check.outputs.version }}
     runs-on: ubuntu-latest
     permissions:
       contents: write
@@ -20,91 +20,51 @@ jobs:
       - uses: actions/checkout@v6
         with:
           fetch-depth: 0
-      - name: 检查
+      - name: 检查是否需要发布
         id: check
         env:
-          GITHUB_TOKEN: ${{secrets.GITHUB_TOKEN}}
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
         run: |
           npx
             --package conventional-changelog-conventionalcommits
             --package @semantic-release/exec
             --package semantic-release
             semantic-release --dry-run
-          if [ -f "version" ];then
+          if [ -f "version" ]; then
             echo "release=true" >> $GITHUB_OUTPUT
             echo "version=$(cat version)" >> $GITHUB_OUTPUT
           else
             echo "release=false" >> $GITHUB_OUTPUT
           fi
-  build-release-web:
-    name: 构建发布到 Web
-    needs:
-      - check-release
+  app-test:
+    name: 应用测试
+    needs: check-release
     if: ${{needs.check-release.outputs.release=='true'}}
     runs-on: ubuntu-latest
     steps:
-      - uses: actions/checkout@v6
-      - uses: cargo-bins/cargo-binstall@main
-      - uses: astral-sh/setup-uv@v7
-      - uses: oven-sh/setup-bun@v2
-        with:
-          bun-version: latest
-      - name: 初始化项目
-        run: |
-          rustup target install wasm32-unknown-unknown
-          cargo binstall wasm-pack
-          uv sync
-          bun run build:deps
-          bun install
-          bun run generate:deps
-          echo ${{needs.check-release.outputs.version}} > public/version
+      - uses: ./.github/actions/initialize-project
+      - name: 应用测试
+        run: bun run test
+  build-release-web:
+    name: 构建发布到 Web
+    needs: [app-test, check-release]
+    runs-on: ubuntu-latest
+    steps:
+      - uses: ./.github/actions/initialize-project
       - name: 构建
-        run: bun run build
+        run: |
+          echo ${{needs.check-release.outputs.version}} > public/version
+          bun run build
       - name: 发布
         uses: cloudflare/wrangler-action@v3
         with:
           wranglerVersion: latest
           packageManager: bun
-          accountId: ${{secrets.CLOUDFLARE_ACCOUNT_ID}}
-          apiToken: ${{secrets.CLOUDFLARE_API_TOKEN}}
-  build-windows:
-    name: 构建 Windows 版本
-    needs:
-      - check-release
-    if: ${{needs.check-release.outputs.release=='true'}}
-    runs-on: windows-latest
-    env:
-      TARGET_PATH: target/release/dp2p-windows.exe
-    steps:
-      - uses: actions/checkout@v6
-      - uses: cargo-bins/cargo-binstall@main
-      - uses: astral-sh/setup-uv@v7
-      - uses: oven-sh/setup-bun@v2
-        with:
-          bun-version: latest
-      - name: 初始化项目
-        run: |
-          rustup target install wasm32-unknown-unknown
-          cargo binstall wasm-pack
-          uv sync
-          bun run build:deps
-          bun install
-          bun run generate:deps
-          echo ${{needs.check-release.outputs.version}} > public/version
-      - name: 构建
-        run: bun tauri build
-      - name: 处理构建产物
-        run: |
-          Move-Item -Path target/release/native.exe -Destination ${{env.TARGET_PATH}}
-      - name: 上传构建产物
-        uses: actions/upload-artifact@v6
-        with:
-          path: ${{env.TARGET_PATH}}
+          accountId: ${{ secrets.CLOUDFLARE_ACCOUNT_ID }}
+          apiToken: ${{ secrets.CLOUDFLARE_API_TOKEN }}
   build-relay:
     name: 构建中继服务程序
-    needs:
-      - check-release
-    if: ${{needs.check-release.outputs.release=='true'}}
+    needs: [check-release]
     runs-on: ubuntu-latest
     steps:
       - uses: actions/checkout@v6
@@ -114,10 +74,28 @@ jobs:
         uses: actions/upload-artifact@v6
         with:
           path: target/release/dp2p-relay
+  build-windows:
+    name: 构建 Windows 版本
+    needs: [app-test, check-release]
+    runs-on: windows-latest
+    env:
+      TARGET_PATH: target/release/dp2p-windows.exe
+    steps:
+      - uses: ./.github/actions/initialize-project
+      - name: 构建
+        run: |
+          echo ${{needs.check-release.outputs.version}} > public/version
+          bun tauri build
+      - name: 处理构建产物
+        run: |
+          Move-Item -Path target/release/native.exe -Destination ${{ env.TARGET_PATH }}
+      - name: 上传构建产物
+        uses: actions/upload-artifact@v6
+        with:
+          path: ${{ env.TARGET_PATH }}
   release:
-    needs:
-      - build-windows
     name: 发布
+    needs: [build-relay, build-windows]
     runs-on: ubuntu-latest
     permissions:
       contents: write
@@ -130,25 +108,22 @@ jobs:
       - uses: actions/create-github-app-token@v2
         id: app_token
         with:
-          app-id: ${{vars.BOT_ID}}
-          private-key: ${{secrets.BOT_PRIVATE_KEY}}
-      - uses: actions/checkout@v6
-        with:
-          fetch-depth: 0
-      - name: 发布到GitHub Release
+          app-id: ${{ vars.BOT_ID }}
+          private-key: ${{ secrets.BOT_PRIVATE_KEY }}
+      - name: 发布到 GitHub Release
         env:
-          GITHUB_TOKEN: ${{steps.app_token.outputs.token}}
+          GITHUB_TOKEN: ${{ steps.app_token.outputs.token }}
         run: |
           npx
             --package conventional-changelog-conventionalcommits
             --package @semantic-release/exec
             --package semantic-release
             semantic-release
-      - name: 从GitHub Release发布内容到Gitee Release
+      - name: 从 GitHub Release 发布内容到 Gitee Release
         uses: trustedinster/sync-release-gitee@v1.3
         with:
           github_owner: ZhangXiChang
           github_repo: dp2p
           gitee_owner: zhangxichang
           gitee_repo: dp2p-release-latest
-          gitee_token: ${{secrets.GITEE_TOKEN}}
+          gitee_token: ${{ secrets.GITEE_TOKEN }}

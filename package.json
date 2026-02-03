@@ -6,22 +6,16 @@
     "startCommand": false
   },
   "scripts": {
-    "build:deps": "bun run build:endpoint",
-    "build:endpoint": "wasm-pack build wasm/endpoint --target web --release",
-    "generate:deps": "bun run generate:app-icon && bun run generate:ipc-bindings && bun run generate:db-schema && bun run generate:test-deps",
-    "generate:app-icon": "bun tauri icon public/icon.svg",
-    "generate:ipc-bindings": "cargo run --bin generate_ipc_bindings",
-    "generate:db-schema": "prisma generate && bun prisma db push && uv run scripts/db_into_schema.py temp.db",
-    "generate:test-deps": "playwright install --with-deps",
+    "install:pre": "wasm-pack build wasm/endpoint --target web --release",
+    "install:post": "tauri icon public/icon.svg && cargo run --bin generate_ipc_bindings && bun run generate:db-schema && playwright install --with-deps",
+    "generate:db-schema": "prisma generate && prisma db push && uv run scripts/db_into_schema.py temp.db",
     "check": "tsc && eslint src",
     "dev": "vinxi dev",
     "build": "bun run check && vinxi build",
     "dev:native": "vinxi dev --config native.config.ts",
     "build:native": "vinxi build --config native.config.ts && bun run check",
     "preview": "wrangler dev",
-    "test": "playwright test",
-    "test:report": "playwright show-report",
-    "test:ui": "playwright test --ui"
+    "test": "playwright test"
   },
   "devDependencies": {
     "@eslint/js": "^9.39.2",

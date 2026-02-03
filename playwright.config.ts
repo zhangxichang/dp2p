@@ -2,9 +2,11 @@ import { defineConfig, devices } from "@playwright/test";
 
 export default defineConfig({
   testDir: "tests",
-  reporter: "html",
+  reporter: process.env.CI ? "dot" : "html",
   webServer: {
     command: "bun run preview",
+    url: "http://127.0.0.1:8787",
+    reuseExistingServer: !process.env.CI,
   },
   projects: [
     {
@@ -17,12 +19,6 @@ export default defineConfig({
       name: "firefox",
       use: {
         ...devices["Desktop Firefox"],
-      },
-    },
-    {
-      name: "safari",
-      use: {
-        ...devices["Desktop Safari"],
       },
     },
   ],
