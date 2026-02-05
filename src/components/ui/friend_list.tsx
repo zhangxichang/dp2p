@@ -89,7 +89,7 @@ export default function FriendList() {
                         keyed
                         when={friends()?.at(v.index)?.avatar}
                         fallback={
-                          <UserIcon class="size-12 rounded-full bg-base-300" />
+                          <UserIcon class="size-10 rounded-full bg-base-300" />
                         }
                       >
                         {(v) => <Image class="size-10 rounded-box" image={v} />}

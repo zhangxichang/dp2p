@@ -53,7 +53,7 @@ export default function AboutModal() {
                         keyed
                         when={v.avatar_url}
                         fallback={
-                          <UserIcon class="size-12 rounded-full bg-base-300" />
+                          <UserIcon class="size-10 rounded-full bg-base-300" />
                         }
                       >
                         {(v) => <Image class="size-10" image={v} />}
