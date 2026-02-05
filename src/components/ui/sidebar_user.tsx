@@ -30,7 +30,7 @@ export default function SidebarUser() {
           <Show
             keyed
             when={user_person()?.avatar}
-            fallback={<UserIcon class="size-12 rounded-full bg-base-300" />}
+            fallback={<UserIcon class="size-10 rounded-full bg-base-300" />}
           >
             {(v) => <Image class="size-10 rounded-box" image={v} />}
           </Show>
