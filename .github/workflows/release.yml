@@ -64,8 +64,7 @@ jobs:
           apiToken: ${{ secrets.CLOUDFLARE_API_TOKEN }}
   build-relay:
     name: 构建中继服务程序
-    needs: check-release
-    if: ${{needs.check-release.outputs.release=='true'}}
+    needs: app-test
     runs-on: ubuntu-latest
     steps:
       - uses: actions/checkout@v6

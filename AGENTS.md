@@ -1,160 +1,160 @@
 # AGENTS.md
 
-This document provides guidelines for AI agents working on this codebase.
+This document provides guidelines for AI coding agents working on this dp2p project.
+
+## Project Overview
+
+A decentralized P2P social network built with SolidStart (SolidJS), TypeScript, Bun, SQLite, and Tauri. Supports both web (Cloudflare Workers) and native (Tauri) deployments.
 
 ## Build Commands
 
 ```bash
-bun run check              # TypeScript check + ESLint
-bun run build              # Full production build
-bun run dev                # Start development server
-bun run dev:native         # Start Tauri native app dev server
-bun run build:native       # Build Tauri native app
-bun run preview            # Preview Cloudflare Workers deployment
+# Development
+bun run dev                    # Web development server
+bun run dev:native           # Tauri native development
+
+# Building
+bun run build                 # Full build with typecheck + lint
+bun run build:native         # Native Tauri build
+
+# Type checking and linting
+bun run check               # Run tsc + eslint (required before commits)
+
+# Testing
+bun run test                # Run all Playwright tests
+bun run test -- --reporter=list  # Run tests with list reporter
+npx playwright test auth.test.ts  # Run specific test file
+npx playwright test -g "登录"      # Run tests matching pattern
+
+# Installation
+bun install                # Install dependencies
+bun run install:pre        # Build WASM modules
+bun run install:post       # Tauri setup, DB schema, Playwright deps
+bun run generate:db-schema # Generate Prisma schema and types
 ```
-
-## Test Commands
-
-```bash
-bun run test               # Run all Playwright tests
-npx playwright test tests/auth.test.ts                    # Run single test file
-npx playwright test tests/auth.test.ts -t "有头像完整流程"  # Run specific test by name
-npx playwright test --project=chrome                     # Run in Chrome only
-```
-
-**Test setup requirements:**
-- Preview server runs on `http://127.0.0.1:8787`
-- Tests use Chinese descriptions (e.g., "有头像完整流程")
-- Failed tests save screenshots to `test-results/`
 
 ## Code Style Guidelines
 
+### TypeScript
+
+- **Strict mode enabled**: No `any`, no implicit `any`
+- **Use `unknown` instead of `any`** for type-safe unknown values
+- **Enable `verbatimModuleSyntax`**: Explicit imports/exports
+- **No `noUncheckedSideEffectImports`**: Mark side-effect imports explicitly
+
 ### Naming Conventions
 
-```typescript
-// Variables and functions: snake_case
-const secret_key = await generate_secret_key();
-function get_user_info() { ... }
-
-// Components: PascalCase
-import Register from "../ui/register";
-import Login from "../ui/login";
-
-// Properties in objects: camelCase
-const user = { userName: "john", avatarUrl: "/path" };
-```
+- **Variables/Functions**: `snake_case` (e.g., `users_actions`, `is_submitting`, `get_preview_avatar`)
+- **Components**: `PascalCase` (e.g., `Login`, `MenuBar`, `UserInfoWindow`)
+- **Interfaces**: `PascalCase` (e.g., `Init`, `Free`, `SQLiteModule`)
+- **CSS classes**: `kebab-case` (e.g., `flex flex-col`, `btn btn-neutral`)
+- **File names**: Match component/class name (e.g., `login.tsx`, `main_store.ts`)
 
 ### Imports
 
-- Use absolute imports with `~/*` alias:
-  ```typescript
-  import { DB } from "~/generated/db_schema";
-  import { QueryBuilder } from "~/lib/query_builder";
-  ```
-- Group imports by category (external, internal):
-  ```typescript
-  import { For, Show } from "solid-js";
-  import { createForm } from "@tanstack/solid-form";
-  import { QueryBuilder } from "~/lib/query_builder";
-  import { MainContext, use_context } from "../context";
-  ```
-
-### TypeScript
-
-- Enable strict mode: `strict: true` in tsconfig.json
-- Use ArkType for runtime validation:
-  ```typescript
-  import { type } from "arktype";
-  const FormSchema = type({
-    user_name: type("string > 0").configure({ message: "用户名不能为空" }),
-  });
-  ```
-- Explicitly type async functions and complex objects
-- Use `unknown` instead of `any` when type is unknown
-
-### Error Handling
-
-- Log errors with `console.error()` in components
-- Use `ErrorBoundary` from `solid-js` for component-level error catching:
-  ```typescript
-  <ErrorBoundary fallback={(error) => <Error error={error as Error} />}>
-    <Suspense fallback={<Loading />}>{props.children}</Suspense>
-  </ErrorBoundary>
-  ```
-- Throw descriptive errors for missing context:
-  ```typescript
-  if (store === undefined) throw new Error("上下文不存在");
-  ```
+- Use `~/*` alias for imports from `./src` (e.g., `import { X } from "~/lib/endpoint"`)
+- Group imports: external libraries first, then internal components/modules
+- Named imports for SolidJS primitives: `createSignal`, `createResource`, `Show`, `For`, `Suspense`
 
 ### SolidJS Patterns
 
-- Use `createForm` from `@tanstack/solid-form` for forms
-- Use `Show` for conditional rendering, `For` for lists
-- Use `Suspense` for async operations with fallback
-- Use `use_context()` helper for context access:
-  ```typescript
-  const main_store = use_context(MainContext);
-  ```
+- Use signals: `const [state, set_state] = createSignal(initialValue)`
+- Use resources: `const [data, { refetch }] = createResource(asyncFn)`
+- Use stores: `const main_store = use_context(MainContext)`
+- Components receive props, not context directly (use context in parent)
+- Use `<Show>` and `<For>` for control flow, not array methods in JSX
+- Use `keyed` prop on `<Show>` when accessing keyed data
 
-### Database (Prisma/Kysely)
+### Error Handling
 
-- Database schema in `schema.prisma`
-- Generated types in `src/generated/db_schema.ts`
-- Use `QueryBuilder` from `~/lib/query_builder` for queries:
-  ```typescript
-  await main_store.sqlite.query(
-    QueryBuilder.selectFrom("user")
-      .selectAll()
-      .where("id", "=", user_id)
-      .compile(),
-  );
-  ```
+- Wrap async operations in try/catch
+- Use `ErrorBoundary` component for error fallbacks
+- Return `void | Promise<void>` for `init()` and `free()` methods
+- Use explicit error messages: `configure({ message: "..." })` with ArkType
 
-### Styling
+### Form Handling
 
-- Tailwind CSS v4 with daisyUI theme
-- Custom theme defined in `src/app.css` with CSS `@plugin` syntax
-- Use DaisyUI component classes: `btn`, `input`, `select`, `modal`, etc.
-- Custom colors defined with oklch color space
+- Use `@tanstack/solid-form` for forms
+- Define schemas with `arktype` for validation
+- Use `createForm` hook with validators
 
-### Comments
+### Database
 
-- Write comments and error messages in Chinese
-- Avoid unnecessary comments on obvious logic
-- Document complex algorithms and non-obvious decisions
-- Use JSDoc for exported functions when helpful
+- Use `kysely` for type-safe SQL queries
+- Use `QueryBuilder` for query building
+- Use `Prisma` for schema management
+- Raw SQL for migrations, Kysely for runtime queries
+
+### CSS/Styling
+
+- Use **Tailwind CSS v4** with `@tailwindcss/vite`
+- Use **DaisyUI** components (e.g., `btn`, `fieldset`, `avatar`)
+- DaisyUI theme: set `data-theme` attribute on `<html>`
+- Use utility classes: `flex flex-col gap-2`, `absolute w-dvh h-dvh`
 
 ### File Organization
 
 ```
 src/
-├── app.tsx              # App shell with Router
-├── app.css              # Tailwind + daisyUI theme
+├── app.tsx              # Root app with Router
+├── app.css             # Global styles
+├── entry-client.tsx    # Client entry
+├── entry-server.tsx    # Server entry
 ├── components/
-│   ├── ui/             # UI components (login, register, sidebar, etc.)
-│   ├── widgets/        # Reusable widgets (error, loading, image)
-│   └── modal/          # Modal dialogs
-├── lib/                # Core libraries (sqlite, endpoint, query_builder)
-├── stores/             # State stores (main, home)
-├── routes/             # Page routes
-└── generated/          # Auto-generated code (Prisma/Kysely)
-tests/                  # Playwright E2E tests
+│   ├── ui/            # UI components (login, register, menu_bar)
+│   ├── widgets/        # Reusable widgets (image, error, loading)
+│   └── modal/         # Modal dialogs
+├── lib/
+│   ├── sqlite/         # SQLite adapters (web, native, interface)
+│   ├── endpoint/       # P2P endpoint adapters
+│   ├── query_builder.ts
+│   └── types.ts
+├── routes/
+│   ├── (main)/         # Route group
+│   └── (main)/index.tsx
+├── stores/
+│   ├── main.ts        # Main store implementation
+│   ├── interface.ts   # Store interfaces
+│   └── home.ts
+└── generated/          # Generated types (Prisma/Kysely)
 ```
 
-### Environment Variables
+### ESLint Configuration
 
-- Prefix: `VITE_` or `TAURI_ENV_` for client-side env vars
-- Check for Tauri environment:
-  ```typescript
-  if (import.meta.env.TAURI_ENV_PLATFORM !== undefined) { ... }
-  ```
+- Extends: ESLint recommended + TypeScript ESLint recommended
+- Strict boolean expressions: `error`
+- No unused locals/parameters: `true`
+- Format code before committing
 
-### Key Technologies
+### Prettier Configuration
 
-- **Framework**: SolidJS with SolidStart
-- **Runtime**: Bun
-- **Database**: SQLite with Prisma + Kysely
-- **Styling**: Tailwind CSS v4 + daisyUI
-- **Testing**: Playwright
-- **Native**: Tauri
-- **Deployment**: Cloudflare Workers (Wrangler)
+- Minimal config (`{}` in `.prettierrc`)
+- Uses VSCode default Prettier settings
+- Run Prettier on: `.ts`, `.tsx`, `.json`, `.jsonc`
+
+## Environment Variables
+
+- `VITE_*` and `TAURI_ENV_*` prefixes are exposed to client
+- Server-side only: use in `entry-server.tsx` or API routes
+
+## Rust/WASM Modules
+
+- Located in `wasm/endpoint/` - built with `wasm-pack --target web`
+- Native Tauri: `native/` directory
+- Generate IPC bindings: `cargo run --bin generate_ipc_bindings`
+
+## Testing with Playwright
+
+- Test files in `tests/` directory
+- Tests use `test.describe` for grouping
+- Use `expect` for assertions
+- WebServer automatically starts on `http://127.0.0.1:8787`
+- Projects: Chromium and Firefox
+
+## Additional Notes
+
+- Uses **Cloudflare Module** preset for server
+- SQLite WASM via `wa-sqlite` for web
+- OPFS worker for file persistence in browser
+- Tauri native app support
+- Chinese UI text (simplified Chinese)

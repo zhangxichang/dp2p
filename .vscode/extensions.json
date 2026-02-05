@@ -1,7 +1,3 @@
 {
-  "recommendations": [
-    "esbenp.prettier-vscode",
-    "dbaeumer.vscode-eslint",
-    "rust-lang.rust-analyzer"
-  ]
+  "recommendations": ["esbenp.prettier-vscode"]
 }

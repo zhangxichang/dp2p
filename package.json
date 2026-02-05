@@ -7,15 +7,16 @@
   },
   "scripts": {
     "install:pre": "wasm-pack build wasm/endpoint --target web --release",
-    "install:post": "tauri icon public/icon.svg && cargo run --bin generate_ipc_bindings && bun run generate:db-schema && playwright install --with-deps",
+    "install:post": "tauri icon public/icon.svg && cargo run --bin generate_ipc_bindings && bun run generate:db-schema && bun run install:playwright-deps",
     "generate:db-schema": "prisma generate && prisma db push && uv run scripts/db_into_schema.py temp.db",
+    "install:playwright-deps": "$env:PLAYWRIGHT_BROWSERS_PATH=0 && playwright install --with-deps",
     "check": "tsc && eslint src",
     "dev": "vinxi dev",
     "build": "bun run check && vinxi build",
-    "dev:native": "vinxi dev --config native.config.ts",
-    "build:native": "vinxi build --config native.config.ts && bun run check",
     "preview": "wrangler dev",
-    "test": "playwright test"
+    "test": "playwright test",
+    "dev:native": "vinxi dev --config native.config.ts",
+    "build:native": "bun run check && vinxi build --config native.config.ts"
   },
   "devDependencies": {
     "@eslint/js": "^9.39.2",
