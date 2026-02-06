@@ -10,8 +10,9 @@
     "build": "bun run check && vinxi build",
     "preview": "wrangler dev",
     "test": "playwright test",
-    "dev:native": "vinxi dev --config native.config.ts",
-    "build:native": "bun run check && vinxi build --config native.config.ts"
+    "dev:native": "vinxi dev --config native.config.ts --host 0.0.0.0",
+    "build:native": "bun run check && vinxi build --config native.config.ts",
+    "android:build": "tauri android build --apk --split-per-abi --target aarch64"
   },
   "devDependencies": {
     "@eslint/js": "^9.39.2",

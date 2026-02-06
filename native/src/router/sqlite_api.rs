@@ -7,7 +7,7 @@ use std::sync::Arc;
 use ::utils::option_ext::OptionGet;
 use eyre::eyre;
 use sharded_slab::Slab;
-use tauri::ipc::Channel;
+use tauri::{Manager, Runtime, Window, ipc::Channel};
 use tokio_rusqlite::{hooks::Action, params_from_iter};
 
 use crate::router::{
@@ -17,7 +17,7 @@ use crate::router::{
 
 #[taurpc::procedures(path = "sqlite")]
 pub trait SQLiteApi {
-    async fn open_db(path: String) -> Result<usize, String>;
+    async fn open_db<R: Runtime>(window: Window<R>, path: String) -> Result<usize, String>;
     async fn close_db(handle: usize) -> Result<(), String>;
     async fn execute_sql(handle: usize, sql: String) -> Result<(), String>;
     async fn execute(
@@ -39,11 +39,14 @@ pub struct SQLiteApiImpl {
 }
 #[taurpc::resolvers]
 impl SQLiteApi for SQLiteApiImpl {
-    async fn open_db(self, path: String) -> Result<usize, String> {
+    async fn open_db<R: Runtime>(self, window: Window<R>, path: String) -> Result<usize, String> {
         async {
             eyre::Ok(
                 self.connection_pool
-                    .insert(tokio_rusqlite::Connection::open(path).await?)
+                    .insert(
+                        tokio_rusqlite::Connection::open(window.path().app_data_dir()?.join(path))
+                            .await?,
+                    )
                     .get()?,
             )
         }
