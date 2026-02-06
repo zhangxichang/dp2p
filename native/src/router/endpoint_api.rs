@@ -24,8 +24,6 @@ pub trait EndpointApi {
     async fn request_person(handle: usize, id: String) -> Result<serde_json::Value, String>;
     async fn request_friend(handle: usize, id: String) -> Result<bool, String>;
     async fn request_chat(handle: usize, id: String) -> Result<Option<usize>, String>;
-    async fn conn_type(handle: usize, id: String) -> Result<Option<String>, String>;
-    async fn latency(handle: usize, id: String) -> Result<Option<usize>, String>;
     async fn subscribe_group(handle: usize, ticket: String) -> Result<usize, String>;
 }
 
@@ -134,24 +132,6 @@ impl EndpointApi for EndpointApiImpl {
             .mse()?
             .request_chat(id)
             .await
-            .mse()?)
-    }
-    async fn conn_type(self, handle: usize, id: String) -> Result<Option<String>, String> {
-        Ok(self
-            .endpoint_pool
-            .get_owned(handle)
-            .get()
-            .mse()?
-            .conn_type(id)
-            .mse()?)
-    }
-    async fn latency(self, handle: usize, id: String) -> Result<Option<usize>, String> {
-        Ok(self
-            .endpoint_pool
-            .get_owned(handle)
-            .get()
-            .mse()?
-            .latency(id)
             .mse()?)
     }
     async fn subscribe_group(self, handle: usize, ticket: String) -> Result<usize, String> {

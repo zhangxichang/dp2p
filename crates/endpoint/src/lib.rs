@@ -3,10 +3,8 @@ use std::sync::Arc;
 use base64::{Engine, prelude::BASE64_STANDARD};
 use eyre::Result;
 use iroh::{
-    EndpointId, RelayConfig, RelayMode, SecretKey, Watcher,
-    discovery::pkarr::PkarrPublisher,
-    endpoint::{Connection, ConnectionType},
-    protocol::Router,
+    EndpointId, RelayConfig, RelayMode, SecretKey, address_lookup::PkarrPublisher,
+    endpoint::Connection, protocol::Router,
 };
 use iroh_blobs::{BlobsProtocol, api::Store};
 use iroh_gossip::{
@@ -49,17 +47,15 @@ impl Endpoint {
         );
         #[allow(unused_mut)]
         let mut endpoint_builder = iroh::Endpoint::empty_builder(RelayMode::Custom(relay_map))
-            .discovery(PkarrPublisher::n0_dns());
+            .address_lookup(PkarrPublisher::n0_dns());
         #[cfg(not(target_family = "wasm"))]
         {
-            use iroh::discovery::{
-                dns::DnsDiscovery, mdns::MdnsDiscovery, pkarr::dht::DhtDiscovery,
-            };
+            use iroh::address_lookup::{DhtAddressLookup, DnsAddressLookup, MdnsAddressLookup};
 
             endpoint_builder = endpoint_builder
-                .discovery(DnsDiscovery::n0_dns())
-                .discovery(MdnsDiscovery::builder())
-                .discovery(DhtDiscovery::builder());
+                .address_lookup(DnsAddressLookup::n0_dns())
+                .address_lookup(MdnsAddressLookup::builder())
+                .address_lookup(DhtAddressLookup::builder());
         }
         let endpoint = endpoint_builder
             .secret_key(SecretKey::from_bytes(secret_key.as_slice().try_into()?))
@@ -149,28 +145,6 @@ impl Endpoint {
             .await?
             .map(|v| self.connection_pool.insert(v).get())
             .transpose()?)
-    }
-    pub fn conn_type(&self, id: String) -> Result<Option<String>> {
-        Ok(self
-            .router
-            .endpoint()
-            .conn_type(id.parse()?)
-            .map(|mut value| {
-                match value.get() {
-                    ConnectionType::Direct(_) => "Direct",
-                    ConnectionType::Relay(_) => "Relay",
-                    ConnectionType::Mixed(_, _) => "Mixed",
-                    ConnectionType::None => "None",
-                }
-                .to_string()
-            }))
-    }
-    pub fn latency(&self, id: String) -> Result<Option<usize>> {
-        Ok(self
-            .router
-            .endpoint()
-            .latency(id.parse()?)
-            .map(|v| v.as_millis() as _))
     }
     pub async fn subscribe_group(&self, ticket: String) -> Result<usize> {
         let ticket = serde_json::from_slice::<Ticket>(&BASE64_STANDARD.decode(ticket)?)?;

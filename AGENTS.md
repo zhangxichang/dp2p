@@ -1,160 +1,240 @@
 # AGENTS.md
 
-This document provides guidelines for AI coding agents working on this dp2p project.
+This document provides guidelines for AI agents working on the DP2P project.
 
 ## Project Overview
 
-A decentralized P2P social network built with SolidStart (SolidJS), TypeScript, Bun, SQLite, and Tauri. Supports both web (Cloudflare Workers) and native (Tauri) deployments.
+DP2P is a distributed peer-to-peer communication software - a cross-platform chat application built with:
+- **Frontend**: SolidJS + Solid Start + Vinxi
+- **Backend**: Rust (WebAssembly modules + Tauri native)
+- **Database**: SQLite with Kysely ORM
+- **Language**: TypeScript (ESNext)
+- **Testing**: Playwright
+- **Package Manager**: Bun
 
-## Build Commands
+## Build/Lint/Test Commands
 
 ```bash
 # Development
-bun run dev                    # Web development server
-bun run dev:native           # Tauri native development
+bun run dev                    # Start web dev server (Cloudflare Workers)
+bun run dev:native             # Start Tauri native dev server
 
 # Building
-bun run build                 # Full build with typecheck + lint
-bun run build:native         # Native Tauri build
+bun run build                  # Web build (runs check first)
+bun run build:native           # Native Tauri build
 
-# Type checking and linting
-bun run check               # Run tsc + eslint (required before commits)
+# Type checking & Linting
+bun run check                  # Run TypeScript compiler + ESLint
 
 # Testing
-bun run test                # Run all Playwright tests
-bun run test -- --reporter=list  # Run tests with list reporter
-npx playwright test auth.test.ts  # Run specific test file
-npx playwright test -g "登录"      # Run tests matching pattern
+bun run test                   # Run all Playwright tests
+npx playwright test            # Run Playwright directly
+npx playwright test auth.test.ts    # Run single test file
+npx playwright test -g "登录"   # Run tests matching pattern
+npx playwright test --project chromium  # Run on specific browser
 
-# Installation
-bun install                # Install dependencies
-bun run install:pre        # Build WASM modules
-bun run install:post       # Tauri setup, DB schema, Playwright deps
-bun run generate:db-schema # Generate Prisma schema and types
+# Database
+bun run generate:db-schema     # Generate Prisma schema & db_schema.sql
+
+# Installation (full setup)
+bun run install:pre            # Build WASM module
+bun install
+bun run install:post           # Generate icons, IPC bindings, DB schema, Playwright
 ```
 
 ## Code Style Guidelines
 
-### TypeScript
+### Imports and Path Aliases
 
-- **Strict mode enabled**: No `any`, no implicit `any`
-- **Use `unknown` instead of `any`** for type-safe unknown values
-- **Enable `verbatimModuleSyntax`**: Explicit imports/exports
-- **No `noUncheckedSideEffectImports`**: Mark side-effect imports explicitly
+- Use path aliases: `~/*` maps to `./src/*`
+- Example: `import { use_context } from "~/lib/context"`
+- Group imports: external libs first, then local imports
+- Type imports use `import type` when only types are needed
+
+```typescript
+import { createSignal, Show, For } from "solid-js";
+import { useNavigate } from "@solidjs/router";
+import type { User } from "~/types";
+import MainStore from "~/stores/main";
+```
+
+### TypeScript Configuration
+
+Strict mode is enabled. Key settings in `tsconfig.json`:
+- `strict: true`
+- `noUnusedLocals: true`
+- `noUnusedParameters: true`
+- `verbatimModuleSyntax: true`
+
+Always define types explicitly. Use `type` keyword for type-only imports.
 
 ### Naming Conventions
 
-- **Variables/Functions**: `snake_case` (e.g., `users_actions`, `is_submitting`, `get_preview_avatar`)
-- **Components**: `PascalCase` (e.g., `Login`, `MenuBar`, `UserInfoWindow`)
-- **Interfaces**: `PascalCase` (e.g., `Init`, `Free`, `SQLiteModule`)
-- **CSS classes**: `kebab-case` (e.g., `flex flex-col`, `btn btn-neutral`)
-- **File names**: Match component/class name (e.g., `login.tsx`, `main_store.ts`)
+| Type | Convention | Example |
+|------|------------|---------|
+| Files | snake_case | `main_store.ts`, `query_builder.ts` |
+| Components (React/Solid) | PascalCase | `Login.tsx`, `UserInfoWindow.tsx` |
+| Functions/Variables | camelCase | `handleSubmit`, `isSubmitting` |
+| Constants | SCREAMING_SNAKE_CASE | `MAX_RETRY_COUNT` |
+| Classes | PascalCase | `MainStore`, `SQLiteModule` |
+| Database tables/columns | snake_case | `user_id`, `created_at` |
 
-### Imports
+### Component Patterns (SolidJS)
 
-- Use `~/*` alias for imports from `./src` (e.g., `import { X } from "~/lib/endpoint"`)
-- Group imports: external libraries first, then internal components/modules
-- Named imports for SolidJS primitives: `createSignal`, `createResource`, `Show`, `For`, `Suspense`
+```typescript
+// Use createSignal for local state
+const [count, setCount] = createSignal(0);
 
-### SolidJS Patterns
+// Use createResource for async data
+const [users] = createResource(async () => await fetchUsers());
 
-- Use signals: `const [state, set_state] = createSignal(initialValue)`
-- Use resources: `const [data, { refetch }] = createResource(asyncFn)`
-- Use stores: `const main_store = use_context(MainContext)`
-- Components receive props, not context directly (use context in parent)
-- Use `<Show>` and `<For>` for control flow, not array methods in JSX
-- Use `keyed` prop on `<Show>` when accessing keyed data
+// Use Show and For for control flow (not ternary in JSX)
+<Show when={loading()} fallback={<Content />}>
+  <Loading />
+</Show>
+
+<For each={items()}>{(item) => <Item value={item} />}</For>
+
+// Use createForm from @tanstack/solid-form for forms
+const form = createForm(() => ({
+  defaultValues: { user_id: "" },
+  onSubmit: ({ value }) => handleSubmit(value),
+}));
+```
+
+### Validation
+
+Use **ArkType** for runtime validation (not Zod):
+
+```typescript
+import { type } from "arktype";
+
+const UserSchema = type({
+  id: "string",
+  name: type("string").configure({ message: "用户名不能为空" }),
+});
+```
+
+### Database (Kysely + SQLite)
+
+```typescript
+import { Kysely } from "kysely";
+import { QueryBuilder } from "~/lib/query_builder";
+
+const results = await db
+  .selectFrom("user")
+  .select(["id", "name"])
+  .where("id", "=", userId)
+  .execute();
+```
 
 ### Error Handling
 
-- Wrap async operations in try/catch
-- Use `ErrorBoundary` component for error fallbacks
-- Return `void | Promise<void>` for `init()` and `free()` methods
-- Use explicit error messages: `configure({ message: "..." })` with ArkType
+- Use try/catch for async operations
+- Throw errors with descriptive Chinese messages
+- Use `use_context()` helper that throws if context is undefined
 
-### Form Handling
+```typescript
+try {
+  await operation();
+} catch (error) {
+  console.error("操作失败:", error);
+  throw new Error("操作失败，请重试");
+}
+```
 
-- Use `@tanstack/solid-form` for forms
-- Define schemas with `arktype` for validation
-- Use `createForm` hook with validators
+### Async/Await Patterns
 
-### Database
-
-- Use `kysely` for type-safe SQL queries
-- Use `QueryBuilder` for query building
-- Use `Prisma` for schema management
-- Raw SQL for migrations, Kysely for runtime queries
+- Always await async operations
+- Handle errors appropriately
+- ESLint rule `@typescript-eslint/no-misused-promises` is disabled (use carefully)
 
 ### CSS/Styling
 
-- Use **Tailwind CSS v4** with `@tailwindcss/vite`
-- Use **DaisyUI** components (e.g., `btn`, `fieldset`, `avatar`)
-- DaisyUI theme: set `data-theme` attribute on `<html>`
-- Use utility classes: `flex flex-col gap-2`, `absolute w-dvh h-dvh`
+- Use Tailwind CSS v4 with DaisyUI components
+- Component classes: `class="flex flex-col gap-4 p-4"`
+- DaisyUI component classes: `btn btn-neutral`, `select select-bordered`
+- Theme classes: `text-base-content`, `bg-base-100`
 
 ### File Organization
 
 ```
 src/
-├── app.tsx              # Root app with Router
-├── app.css             # Global styles
-├── entry-client.tsx    # Client entry
-├── entry-server.tsx    # Server entry
 ├── components/
-│   ├── ui/            # UI components (login, register, menu_bar)
-│   ├── widgets/        # Reusable widgets (image, error, loading)
-│   └── modal/         # Modal dialogs
+│   ├── ui/           # Feature components (Login, Register, etc.)
+│   ├── modal/        # Modal dialogs
+│   ├── widgets/      # Reusable widgets (Image, Loading, Error)
+│   └── context.tsx   # Context providers
 ├── lib/
-│   ├── sqlite/         # SQLite adapters (web, native, interface)
-│   ├── endpoint/       # P2P endpoint adapters
-│   ├── query_builder.ts
-│   └── types.ts
-├── routes/
-│   ├── (main)/         # Route group
-│   └── (main)/index.tsx
+│   ├── sqlite/       # SQLite adapters (native, web)
+│   ├── endpoint/     # P2P endpoint module
+│   ├── types.ts      # Shared types
+│   ├── sqlite.ts     # SQLite module adapter
+│   └── query_builder.ts  # Kysely instance
 ├── stores/
-│   ├── main.ts        # Main store implementation
-│   ├── interface.ts   # Store interfaces
-│   └── home.ts
-└── generated/          # Generated types (Prisma/Kysely)
+│   ├── main.ts       # MainStore (app initialization)
+│   ├── home.ts       # HomeStore (chat features)
+│   └── interface.ts  # Store interfaces
+├── app.config.ts     # Vinxi app config
+└── type.d.ts         # TypeScript declarations
 ```
 
 ### ESLint Configuration
 
-- Extends: ESLint recommended + TypeScript ESLint recommended
-- Strict boolean expressions: `error`
-- No unused locals/parameters: `true`
-- Format code before committing
+```bash
+bun run check  # Runs tsc && eslint src
+```
 
-### Prettier Configuration
+Rules enforced:
+- Strict boolean expressions
+- No unused locals/parameters
+- Recommended ESLint + TypeScript rules
 
-- Minimal config (`{}` in `.prettierrc`)
-- Uses VSCode default Prettier settings
-- Run Prettier on: `.ts`, `.tsx`, `.json`, `.jsonc`
+### Testing with Playwright
 
-## Environment Variables
+```typescript
+import test, { expect } from "@playwright/test";
 
-- `VITE_*` and `TAURI_ENV_*` prefixes are exposed to client
-- Server-side only: use in `entry-server.tsx` or API routes
+test.describe("Feature Name", () => {
+  test("should do something", async ({ page }) => {
+    await page.goto("/");
+    // assertions with expect
+    await expect(page.locator("text=目标")).toBeVisible();
+  });
+});
+```
 
-## Rust/WASM Modules
+### Conditional Imports (Platform Detection)
 
-- Located in `wasm/endpoint/` - built with `wasm-pack --target web`
-- Native Tauri: `native/` directory
-- Generate IPC bindings: `cargo run --bin generate_ipc_bindings`
+Use `import.meta.env.TAURI_ENV_PLATFORM` for platform-specific code:
 
-## Testing with Playwright
+```typescript
+if (import.meta.env.TAURI_ENV_PLATFORM !== undefined) {
+  const mod = await import("./sqlite/native");
+  SQLiteModuleAdapter = mod.SQLiteModuleImpl;
+} else {
+  const mod = await import("./sqlite/web");
+  SQLiteModuleAdapter = mod.SQLiteModuleImpl;
+}
+```
 
-- Test files in `tests/` directory
-- Tests use `test.describe` for grouping
-- Use `expect` for assertions
-- WebServer automatically starts on `http://127.0.0.1:8787`
-- Projects: Chromium and Firefox
+### Context Usage
 
-## Additional Notes
+Always use the `use_context()` helper for SolidJS contexts:
 
-- Uses **Cloudflare Module** preset for server
-- SQLite WASM via `wa-sqlite` for web
-- OPFS worker for file persistence in browser
-- Tauri native app support
-- Chinese UI text (simplified Chinese)
+```typescript
+import { use_context, MainContext } from "~/components/context";
+
+const mainStore = use_context(MainContext);
+```
+
+### Commit Message Style
+
+Follow conventional commits:
+- `feat:` New features
+- `fix:` Bug fixes
+- `refactor:` Code refactoring
+- `docs:` Documentation changes
+- `chore:` Maintenance tasks
+
+Example: `feat(ui): add user avatar display in login form`
