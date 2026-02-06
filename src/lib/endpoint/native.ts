@@ -1,7 +1,7 @@
 import { createTauRPCProxy, type JsonValue } from "~/generated/ipc_bindings";
 import type { Person } from "../types";
 import type { Endpoint, EndpointModule } from "./interface";
-import type { ConnectionType, PersonProtocolEvent } from "./types";
+import type { PersonProtocolEvent } from "./types";
 
 export class EndpointModuleImpl implements EndpointModule {
   init() {}
@@ -62,15 +62,6 @@ export class EndpointImpl implements Endpoint {
   }
   async request_chat(id: string) {
     return await createTauRPCProxy().endpoint.request_chat(this.handle, id);
-  }
-  async conn_type(id: string) {
-    return (await createTauRPCProxy().endpoint.conn_type(
-      this.handle,
-      id,
-    )) as ConnectionType | null;
-  }
-  async latency(id: string) {
-    return await createTauRPCProxy().endpoint.latency(this.handle, id);
   }
   async subscribe_group(ticket: string) {
     return await createTauRPCProxy().endpoint.subscribe_group(

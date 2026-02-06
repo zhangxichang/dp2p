@@ -6,7 +6,7 @@ import wasm_init, {
 import wasm_url from "@dp2p/endpoint/endpoint_wasm_bg.wasm?url";
 import type { Person } from "~/lib/types";
 import type { Endpoint, EndpointModule } from "./interface";
-import type { ConnectionType, PersonProtocolEvent } from "./types";
+import type { PersonProtocolEvent } from "./types";
 
 export class EndpointModuleImpl implements EndpointModule {
   async init() {
@@ -52,14 +52,6 @@ export class EndpointImpl implements Endpoint {
   }
   async request_chat(id: string) {
     const a = await this.endpoint.request_chat(id);
-    return a != undefined ? (a as unknown as bigint) : null;
-  }
-  conn_type(id: string) {
-    const a = this.endpoint.conn_type(id);
-    return a != undefined ? (a as ConnectionType) : null;
-  }
-  latency(id: string) {
-    const a = this.endpoint.latency(id);
     return a != undefined ? (a as unknown as bigint) : null;
   }
   async subscribe_group(ticket: string) {

@@ -1,6 +1,6 @@
 import type { Person } from "~/lib/types";
 import type { Init } from "../interface";
-import type { ConnectionType, PersonProtocolEvent } from "./types";
+import type { PersonProtocolEvent } from "./types";
 
 export interface EndpointModule extends Init {
   create_endpoint(secret_key: Uint8Array, person: Person): Promise<Endpoint>;
@@ -16,9 +16,5 @@ export interface Endpoint {
   request_person(id: string): Promise<Person>;
   request_friend(id: string): Promise<boolean>;
   request_chat(id: string): Promise<bigint | null>;
-  conn_type(
-    id: string,
-  ): (ConnectionType | null) | Promise<ConnectionType | null>;
-  latency(id: string): (bigint | null) | Promise<bigint | null>;
   subscribe_group(ticket: string): Promise<bigint>;
 }

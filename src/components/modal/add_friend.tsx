@@ -1,4 +1,5 @@
 import { HomeContext, use_context } from "../context";
+import { tryit } from "radash";
 
 export default function AddFriend() {
   const home_store = use_context(HomeContext);
@@ -8,11 +9,14 @@ export default function AddFriend() {
       search_user_id_input_ref !== undefined &&
       search_user_id_input_ref.value != ""
     ) {
-      console.info(
-        await home_store.endpoint.request_person(
-          search_user_id_input_ref.value,
-        ),
-      );
+      const [err, person] = await tryit((id: string) =>
+        home_store.endpoint.request_person(id),
+      )(search_user_id_input_ref.value);
+      if (err) {
+        console.info(err.message);
+      } else {
+        console.info(person);
+      }
     }
   };
   return (

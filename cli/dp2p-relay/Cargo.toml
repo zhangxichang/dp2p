@@ -13,10 +13,10 @@ tokio = { version = "1.49.0", features = [
     "rt-multi-thread",
     "fs",
 ] }
-clap = { version = "4.5.54", features = ["derive"] }
+clap = { version = "4.5.57", features = ["derive"] }
 serde = { version = "1.0.228", features = ["derive"] }
-toml = "0.9.11+spec-1.1.0"
-iroh-relay = { version = "0.95.1", features = ["server"] }
+toml = "0.9.8"
+iroh-relay = { version = "0.96.0", features = ["server"] }
 rustls = { version = "0.23.36", default-features = false }
 rustls-cert-file-reader = "0.4.2"
 rustls-cert-reloadable-resolver = "0.7.1"

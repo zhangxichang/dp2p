@@ -48,12 +48,6 @@ impl Endpoint {
     pub async fn request_chat(&self, id: String) -> Result<Option<usize>, JsError> {
         self.0.request_chat(id).await.mje()
     }
-    pub fn conn_type(&self, id: String) -> Result<Option<String>, JsError> {
-        self.0.conn_type(id).mje()
-    }
-    pub fn latency(&self, id: String) -> Result<Option<usize>, JsError> {
-        self.0.latency(id).mje()
-    }
     pub async fn subscribe_group(&self, ticket: String) -> Result<usize, JsError> {
         self.0.subscribe_group(ticket).await.mje()
     }
